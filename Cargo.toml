@@ -1,0 +1,19 @@
+[package]
+name = "aoc_bot"
+version = "0.1.0"
+authors = ["Sm03leBr00t <Sm03leBr00t@protonmail.com>"]
+edition = "2018"
+
+[dependencies]
+serde = {version="1.0.117", features = ["derive"]}
+serde_json = "1.0.59"
+isahc = "0.9.13"
+cookie = "0.14.3"
+anyhow = "1.0.34"
+tokio = {version="0.2.0", features=["full"]}
+twilight-cache-inmemory = "0.2"
+twilight-gateway = "0.2"
+twilight-http = "0.2"
+twilight-model = "0.2"
+twilight-embed-builder = "0.2"
+cached = "0.21.0"
