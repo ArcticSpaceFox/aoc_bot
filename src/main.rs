@@ -1,8 +1,9 @@
+use std::env;
 use std::error::Error;
 
 use cached::proc_macro::cached;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use aoc_bot::YearEvent;
 use reqwest::header;
 use tokio::stream::StreamExt;
@@ -17,11 +18,14 @@ use twilight_model::gateway::Intents;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    dotenv::dotenv().ok();
+
     println!("Configuring ...");
-    let lid = "975781".to_string();
-    // TODO: insert tokens here
-    let session_cookie = "".to_string();
-    let token = "".to_string();
+    let lid = env::var("AOC_BOARD_ID").context("AOC_BOARD_ID env var missing")?;
+    let session_cookie =
+        env::var("AOC_SESSION_COOKIE").context("AOC_SESSION_COOKIE env var missing")?;
+    let token = env::var("DISCORD_BOT_TOKEN").context("DISCORD_BOT_TOKEN env var missing")?;
+
     println!("Starting ...");
 
     // This is the default scheme. It will automatically create as many
