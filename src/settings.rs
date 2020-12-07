@@ -14,14 +14,14 @@ pub enum LevelFilterDef {
     Trace,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct LoggerConfigs {
     pub terminal: LoggerConfig,
     pub file_path: String,
     pub file: LoggerConfig,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct LoggerConfig {
     pub enabled: bool,
     // (Off, Error, Warn, Info, Debug, Trace)
@@ -29,18 +29,18 @@ pub struct LoggerConfig {
     pub filter: simplelog::LevelFilter,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct AoCConfig {
     pub board_id: String,
     pub session_cookie: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct DiscordConfig {
     pub bot_token: String,
 }
 
-#[derive(Debug, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Deserialize, Eq, PartialEq, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum RunMode {
     Development,
@@ -74,7 +74,7 @@ impl Default for RunMode {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Settings {
     #[serde(default)]
     pub run_mode: RunMode,

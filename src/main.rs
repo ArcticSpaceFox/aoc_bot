@@ -2,14 +2,14 @@
 extern crate log;
 extern crate simplelog;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use aoc_bot::YearEvent;
 mod settings;
 
 use cached::proc_macro::cached;
 use reqwest::header;
 use simplelog::*;
-use std::{env, fs::File};
+use std::fs::File;
 
 use tokio::stream::StreamExt;
 use twilight_cache_inmemory::{EventType, InMemoryCache};
@@ -27,19 +27,17 @@ async fn main() -> Result<()> {
     dotenv::dotenv().ok();
     // Load settings file
     let settings = settings::Settings::new()?;
-    
+
     // Setting up an combined logger which will log to the terminal and a file
     let _logger = CombinedLogger::init({
         let mut buf = Vec::<Box<dyn SharedLogger>>::new();
         // TODO: Read log level from config
         match settings.logger.terminal.enabled {
-            true => buf.push(
-                TermLogger::new(
-                    settings.logger.terminal.filter,
-                    Config::default(),
-                    TerminalMode::Mixed,
-                ),
-            ),
+            true => buf.push(TermLogger::new(
+                settings.logger.terminal.filter,
+                Config::default(),
+                TerminalMode::Mixed,
+            )),
             false => debug!("Terminal logger disabled"),
         };
         buf.push(WriteLogger::new(
@@ -51,13 +49,6 @@ async fn main() -> Result<()> {
     })
     .expect("Logger failed to set up");
 
-    info!("Configuring ...");
-
-    let lid = env::var("AOC_BOARD_ID").context("AOC_BOARD_ID env var missing")?;
-    let session_cookie =
-        env::var("AOC_SESSION_COOKIE").context("AOC_SESSION_COOKIE env var missing")?;
-    let token = env::var("DISCORD_BOT_TOKEN").context("DISCORD_BOT_TOKEN env var missing")?;
-
     info!("Starting ...");
     // This is the default scheme. It will automatically create as many
     // shards as is suggested by Discord.
@@ -65,7 +56,7 @@ async fn main() -> Result<()> {
     debug!("Using scheme : {:?}", scheme);
 
     // Use intents to only receive guild message events.
-    let cluster = Cluster::builder(token.clone(), Intents::GUILD_MESSAGES)
+    let cluster = Cluster::builder(settings.discord.bot_token.clone(), Intents::GUILD_MESSAGES)
         .shard_scheme(scheme)
         .build()
         .await?;
@@ -83,7 +74,7 @@ async fn main() -> Result<()> {
 
     // HTTP is separate from the gateway, so create a new client.
     debug!("Setting up http client for twilight");
-    let http = HttpClient::new(token.clone());
+    let http = HttpClient::new(settings.discord.bot_token.clone());
 
     // Since we only care about new messages, make the cache only
     // cache new messages.
@@ -109,8 +100,8 @@ async fn main() -> Result<()> {
             shard_id,
             event,
             http.clone(),
-            lid.clone(),
-            session_cookie.clone(),
+            settings.aoc.board_id.clone(),
+            settings.aoc.session_cookie.clone(),
         );
 
         tokio::spawn(async {
