@@ -4,7 +4,7 @@ use cached::proc_macro::cached;
 
 use anyhow::Result;
 use aoc_bot::YearEvent;
-use isahc::{config::RedirectPolicy, prelude::*};
+use reqwest::header;
 use tokio::stream::StreamExt;
 use twilight_cache_inmemory::{EventType, InMemoryCache};
 use twilight_embed_builder::{EmbedBuilder, EmbedFieldBuilder};
@@ -31,9 +31,9 @@ async fn main() -> Result<()> {
         .value_of("discord_token")
         .unwrap_or(std::env::var("LID").unwrap().as_str())
         .to_owned(); */
-        let lid = "975781".to_string();
-        let session_cookie = "aoc_session_cookie".to_string();
-        let token = "<your_discord_token>".to_string();
+    let lid = "975781".to_string();
+    let session_cookie = "aoc_session_cookie".to_string();
+    let token = "<your_discord_token>".to_string();
     println!("Starting ...");
 
     // This is the default scheme. It will automatically create as many
@@ -87,25 +87,20 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-#[cached(time=7200)]
-async fn get_aoc_data(
-    request_url: String,
-    session_cookie: String,
-) -> YearEvent {
+#[cached(time = 7200)]
+async fn get_aoc_data(request_url: String, session_cookie: String) -> YearEvent {
     println!("Attempting : {}", request_url);
     let cookie = cookie::Cookie::build("session", session_cookie).finish();
-    let client = isahc::HttpClient::builder()
-        .redirect_policy(RedirectPolicy::Follow)
-        .default_header("Cookie", cookie.to_string())
-        .build().unwrap();
-    // Send a GET request and wait for the response headers.
-    // Must be `mut` so we can read the response body.
-    let mut response = client.get_async(request_url).await.unwrap();
+    let response = reqwest::Client::new()
+        .get(&request_url)
+        .header(header::COOKIE, cookie.to_string())
+        .send()
+        .await
+        .unwrap();
     println!("Retrieved DATA");
 
     // Read the response body as text into a string and print it.
-    let resp_text = response.text().unwrap();
-    let data = serde_json::from_str::<YearEvent>(&resp_text).unwrap();
+    let data = response.json().await.unwrap();
     println!("Parsed DATA");
 
     data
@@ -139,9 +134,19 @@ async fn handle_event(
             uvec.sort_by(|a, b| b.1.cmp(a.1));
 
             for (idx, user) in uvec.iter().enumerate() {
-                println!("#{} - {} - {} stars",idx+1, user.1.name, user.1.stars);
+                println!("#{} - {} - {} stars", idx + 1, user.1.name, user.1.stars);
                 embed = embed.field(
-                    EmbedFieldBuilder::new(format!("#{} - {} - {} score", idx+1, user.1.name, user.1.local_score), format!("Solved {} Challenges", user.1.stars))?.inline().build(),
+                    EmbedFieldBuilder::new(
+                        format!(
+                            "#{} - {} - {} score",
+                            idx + 1,
+                            user.1.name,
+                            user.1.local_score
+                        ),
+                        format!("Solved {} Challenges", user.1.stars),
+                    )?
+                    .inline()
+                    .build(),
                 );
             }
             println!("sending message");
