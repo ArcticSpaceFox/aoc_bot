@@ -79,23 +79,25 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-#[cached(time = 7200, with_cached_flag = true)]
-async fn get_aoc_data(request_url: String, session_cookie: String) -> cached::Return<YearEvent> {
+#[cached(time = 7200, result = true, with_cached_flag = true)]
+async fn get_aoc_data(
+    request_url: String,
+    session_cookie: String,
+) -> Result<cached::Return<YearEvent>> {
     println!("Attempting : {}", request_url);
     let cookie = cookie::Cookie::build("session", session_cookie).finish();
     let response = reqwest::Client::new()
         .get(&request_url)
         .header(header::COOKIE, cookie.to_string())
         .send()
-        .await
-        .unwrap();
+        .await?;
     println!("Retrieved DATA");
 
     // Read the response body as text into a string and print it.
-    let data = response.json::<YearEvent>().await.unwrap();
+    let data = response.json::<YearEvent>().await?;
     println!("Parsed DATA");
 
-    cached::Return::new(data)
+    Ok(cached::Return::new(data))
 }
 
 async fn handle_event(
@@ -104,7 +106,7 @@ async fn handle_event(
     http: HttpClient,
     lid: String,
     session_cookie: String,
-) -> Result<(), Box<dyn Error + Send + Sync>> {
+) -> Result<()> {
     match event {
         Event::MessageCreate(msg) if msg.content == "!ping" => {
             http.create_message(msg.channel_id)
@@ -116,12 +118,15 @@ async fn handle_event(
                 "https://adventofcode.com/2020/leaderboard/private/view/{}.json",
                 lid
             );
-            let data = get_aoc_data(request_url, session_cookie).await;
+            let data = get_aoc_data(request_url, session_cookie).await?;
             println!("From Cache : {}", data.was_cached);
             println!("Creating embed");
             let mut embed = EmbedBuilder::new()
                 .title(format!("AoC Leaderboard [{}]", lid))?
-                .description(format!("Here is your current Leaderboard - Cached [{}]", data.was_cached))?;
+                .description(format!(
+                    "Here is your current Leaderboard - Cached [{}]",
+                    data.was_cached
+                ))?;
 
             let mut uvec: Vec<_> = data.members.iter().collect();
             uvec.sort_by(|a, b| b.1.cmp(a.1));
