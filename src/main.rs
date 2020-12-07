@@ -3,13 +3,13 @@ extern crate log;
 extern crate simplelog;
 
 use anyhow::{Context, Result};
-use aoc_bot::{YearEvent};
+use aoc_bot::YearEvent;
 mod settings;
 
 use cached::proc_macro::cached;
 use reqwest::header;
 use simplelog::*;
-use std::{fs::File, env};
+use std::{env, fs::File};
 
 use tokio::stream::StreamExt;
 use twilight_cache_inmemory::{EventType, InMemoryCache};
@@ -26,24 +26,30 @@ async fn main() -> Result<()> {
     // Loading .env file
     dotenv::dotenv().ok();
     // Load settings file
-    let settings = settings::Settings::new();
-
-    println!("{:#?}", settings);
-    panic!();
-
+    let settings = settings::Settings::new()?;
+    
     // Setting up an combined logger which will log to the terminal and a file
-    let _logger = CombinedLogger::init(
-        vec![
-            // TODO: Read log level from config
-            #[cfg(feature = "termcolor")]
-            match settings.logger.terminal.enabled {
-                true => return TermLogger::new(settings.logger.terminal.filter, Config::default(), TerminalMode::Mixed),
-                false => debug!("Terminal logger disabled"),
-            },
-            // TODO: make this optional
-            WriteLogger::new(LevelFilter::Info, Config::default(), File::create("aocbot.log").unwrap())
-        ]
-    ).expect("Logger failed to set up");
+    let _logger = CombinedLogger::init({
+        let mut buf = Vec::<Box<dyn SharedLogger>>::new();
+        // TODO: Read log level from config
+        match settings.logger.terminal.enabled {
+            true => buf.push(
+                TermLogger::new(
+                    settings.logger.terminal.filter,
+                    Config::default(),
+                    TerminalMode::Mixed,
+                ),
+            ),
+            false => debug!("Terminal logger disabled"),
+        };
+        buf.push(WriteLogger::new(
+            settings.logger.file.filter,
+            Config::default(),
+            File::create(settings.logger.file_path).unwrap(),
+        ));
+        buf
+    })
+    .expect("Logger failed to set up");
 
     info!("Configuring ...");
 
@@ -51,7 +57,7 @@ async fn main() -> Result<()> {
     let session_cookie =
         env::var("AOC_SESSION_COOKIE").context("AOC_SESSION_COOKIE env var missing")?;
     let token = env::var("DISCORD_BOT_TOKEN").context("DISCORD_BOT_TOKEN env var missing")?;
-  
+
     info!("Starting ...");
     // This is the default scheme. It will automatically create as many
     // shards as is suggested by Discord.
@@ -157,10 +163,16 @@ async fn handle_event(
                 "https://adventofcode.com/2020/leaderboard/private/view/{}.json",
                 lid
             );
-            info!("Request from ({}) {} to get aoc board", msg.author.id, msg.author.name);
+            info!(
+                "Request from ({}) {} to get aoc board",
+                msg.author.id, msg.author.name
+            );
             let data = get_aoc_data(request_url, session_cookie).await?;
 
-            debug!("Retrieved data (cached: {}) -> constructing message", data.was_cached);
+            debug!(
+                "Retrieved data (cached: {}) -> constructing message",
+                data.was_cached
+            );
             let mut embed = EmbedBuilder::new()
                 .title(format!("AoC Leaderboard [{}]", lid))?
                 .description(format!(

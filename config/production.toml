@@ -3,8 +3,8 @@ file_path = "aocbot.log"
 
 [logger.terminal]
 enabled = true
-filter = "info"
+filter = "warn"
 
 [logger.file]
 enabled = true
-filter = "debug"
+filter = "info"

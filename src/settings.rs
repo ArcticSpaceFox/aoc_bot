@@ -1,35 +1,86 @@
-use std::env;
-use config::{ConfigError, Config, File, Environment};
+use config::{Config, ConfigError, Environment, File};
+use std::{env, str::FromStr};
 
-#[derive(Debug)]
-pub struct LoggersConfig {
-    terminal: LoggerConfig,
-    file: LoggerConfig,
+use serde::Deserialize;
+
+#[derive(Debug, Deserialize)]
+#[serde(remote = "simplelog::LevelFilter", rename_all = "lowercase")]
+pub enum LevelFilterDef {
+    Off,
+    Error,
+    Warn,
+    Info,
+    Debug,
+    Trace,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct LoggerConfigs {
+    pub terminal: LoggerConfig,
+    pub file_path: String,
+    pub file: LoggerConfig,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct LoggerConfig {
-    enabled: bool,
-    filter: simplelog::LevelFilter,
+    pub enabled: bool,
+    // (Off, Error, Warn, Info, Debug, Trace)
+    #[serde(with = "LevelFilterDef")]
+    pub filter: simplelog::LevelFilter,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct AoCConfig {
-    board_id: String,
-    session_cookie: String,
+    pub board_id: String,
+    pub session_cookie: String,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct DiscordConfig {
-    bot_token: String,
+    pub bot_token: String,
+}
+
+#[derive(Debug, Deserialize, Eq, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum RunMode {
+    Development,
+    Production,
+}
+
+impl FromStr for RunMode {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "development" => Ok(Self::Development),
+            "production" => Ok(Self::Production),
+            _ => Err(()),
+        }
+    }
+}
+
+impl ToString for RunMode {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Development => "development",
+            Self::Production => "production",
+        }.into()
+    }
+}
+
+impl Default for RunMode {
+    fn default() -> Self {
+        Self::Development
+    }
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Settings {
-    debug: bool,
-    logger: LoggersConfig,
-    aoc: AoCConfig,
-    discord: DiscordConfig,
+    #[serde(default)]
+    pub run_mode: RunMode,
+    pub logger: LoggerConfigs,
+    pub aoc: AoCConfig,
+    pub discord: DiscordConfig,
 }
 
 impl Settings {
@@ -42,9 +93,9 @@ impl Settings {
         // Add in the current environment file
         // Default to 'development' env
         // Note that this file is _optional_
-        let env = env::var("RUN_MODE").unwrap_or_else(|_| "development".into());
-        s.merge(File::with_name(&format!("config/{}", env)).required(false))?;
-
+        let env = RunMode::from_str(&env::var("RUN_MODE").unwrap_or_else(|_| "development".into()))
+            .map_err(|_| ConfigError::Message("invalid run mode".into()))?;
+        
         // Add in a local configuration file
         // This file shouldn't be checked in to git
         s.merge(File::with_name("config/local").required(false))?;
@@ -55,13 +106,16 @@ impl Settings {
         s.merge(Environment::with_prefix("DISCORD"))?;
 
         // You may also programmatically change settings
-        if s.get_bool("debug").unwrap_or(false) {
-            s.set("logger.terminal.filter", "debug")?;
-            s.set("logger.file.filter", "Trace")?;
+        if env == RunMode::Development {
+            s.set("logger.terminal.enabled", true)?;
+            s.set("logger.terminal.filter", "info")?;
+            s.set("logger.file.enabled", true)?;
+            s.set("logger.file.filter", "debug")?;
         }
+        s.merge(File::with_name(&format!("config/{}.toml", env.to_string())).required(false))?;
 
         // Now that we're done, let's access our configuration
-        info!("debug: {:?}", s.get_bool("debug"));
+        info!("Configured in mode: {}", env.to_string());
 
         // You can deserialize (and thus freeze) the entire configuration as
         s.try_into()
