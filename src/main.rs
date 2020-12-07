@@ -1,5 +1,4 @@
 use std::env;
-use std::error::Error;
 
 use cached::proc_macro::cached;
 
@@ -67,13 +66,19 @@ async fn main() -> Result<()> {
         // Update the cache with the event.
         cache.update(&event);
 
-        tokio::spawn(handle_event(
+        let fut = handle_event(
             shard_id,
             event,
             http.clone(),
             lid.clone(),
             session_cookie.clone(),
-        ));
+        );
+
+        tokio::spawn(async {
+            if let Err(e) = fut.await {
+                eprintln!("failed handling event: {}", e);
+            }
+        });
     }
 
     Ok(())
