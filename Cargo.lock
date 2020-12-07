@@ -29,6 +29,7 @@ dependencies = [
  "cached",
  "cookie",
  "dotenv",
+ "log",
  "reqwest",
  "serde",
  "simplelog",
