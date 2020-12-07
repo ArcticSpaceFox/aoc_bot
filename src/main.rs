@@ -17,23 +17,11 @@ use twilight_model::gateway::Intents;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // TODO: remove prints
     println!("Configuring ...");
-    /* let lid = matches
-        .value_of("boardid")
-        .unwrap_or(std::env::var("LID").unwrap().as_str())
-        .to_owned();
-    let session_cookie = matches
-        .value_of("session_cookie")
-        .unwrap_or(std::env::var("SESS").unwrap().as_str())
-        .to_owned();
-    let token = matches
-        .value_of("discord_token")
-        .unwrap_or(std::env::var("LID").unwrap().as_str())
-        .to_owned(); */
     let lid = "975781".to_string();
-    let session_cookie = "aoc_session_cookie".to_string();
-    let token = "<your_discord_token>".to_string();
+    // TODO: insert tokens here
+    let session_cookie = "".to_string();
+    let token = "".to_string();
     println!("Starting ...");
 
     // This is the default scheme. It will automatically create as many
@@ -87,8 +75,8 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-#[cached(time = 7200)]
-async fn get_aoc_data(request_url: String, session_cookie: String) -> YearEvent {
+#[cached(time = 7200, with_cached_flag = true)]
+async fn get_aoc_data(request_url: String, session_cookie: String) -> cached::Return<YearEvent> {
     println!("Attempting : {}", request_url);
     let cookie = cookie::Cookie::build("session", session_cookie).finish();
     let response = reqwest::Client::new()
@@ -100,10 +88,10 @@ async fn get_aoc_data(request_url: String, session_cookie: String) -> YearEvent 
     println!("Retrieved DATA");
 
     // Read the response body as text into a string and print it.
-    let data = response.json().await.unwrap();
+    let data = response.json::<YearEvent>().await.unwrap();
     println!("Parsed DATA");
 
-    data
+    cached::Return::new(data)
 }
 
 async fn handle_event(
@@ -125,10 +113,11 @@ async fn handle_event(
                 lid
             );
             let data = get_aoc_data(request_url, session_cookie).await;
+            println!("From Cache : {}", data.was_cached);
             println!("Creating embed");
             let mut embed = EmbedBuilder::new()
                 .title(format!("AoC Leaderboard [{}]", lid))?
-                .description("Here is your current Leaderboard")?;
+                .description(format!("Here is your current Leaderboard - Cached [{}]", data.was_cached))?;
 
             let mut uvec: Vec<_> = data.members.iter().collect();
             uvec.sort_by(|a, b| b.1.cmp(a.1));
