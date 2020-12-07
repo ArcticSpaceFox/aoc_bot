@@ -5,14 +5,15 @@ authors = ["Sm03leBr00t <Sm03leBr00t@protonmail.com>"]
 edition = "2018"
 
 [dependencies]
-serde = { version = "1.0.118", features = ["derive"] }
-cookie = "0.14.3"
 anyhow = "1.0.35"
+cached = "0.22.0"
+cookie = "0.14.3"
+dotenv = "0.15.0"
+reqwest = { version = "0.10.9", default-features = false, features = ["json", "rustls-tls"] }
+serde = { version = "1.0.118", features = ["derive"] }
 tokio = { version = "0.2.23", features = ["macros"] }
 twilight-cache-inmemory = "0.2.3"
+twilight-embed-builder = "0.2.0"
 twilight-gateway = "0.2.5"
 twilight-http = "0.2.5"
 twilight-model = "0.2.4"
-twilight-embed-builder = "0.2.0"
-cached = "0.22.0"
-reqwest = { version = "0.10.9", default-features = false, features = ["json", "rustls-tls"] }
