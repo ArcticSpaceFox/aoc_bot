@@ -1,10 +1,16 @@
-use std::env;
-
-use cached::proc_macro::cached;
+#[macro_use]
+extern crate log;
+extern crate simplelog;
 
 use anyhow::{Context, Result};
 use aoc_bot::YearEvent;
+mod settings;
+
+use cached::proc_macro::cached;
 use reqwest::header;
+use simplelog::*;
+use std::{env, fs::File};
+
 use tokio::stream::StreamExt;
 use twilight_cache_inmemory::{EventType, InMemoryCache};
 use twilight_embed_builder::{EmbedBuilder, EmbedFieldBuilder};
@@ -17,19 +23,46 @@ use twilight_model::gateway::Intents;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // Loading .env file
     dotenv::dotenv().ok();
+    // Load settings file
+    let settings = settings::Settings::new()?;
+    
+    // Setting up an combined logger which will log to the terminal and a file
+    let _logger = CombinedLogger::init({
+        let mut buf = Vec::<Box<dyn SharedLogger>>::new();
+        // TODO: Read log level from config
+        match settings.logger.terminal.enabled {
+            true => buf.push(
+                TermLogger::new(
+                    settings.logger.terminal.filter,
+                    Config::default(),
+                    TerminalMode::Mixed,
+                ),
+            ),
+            false => debug!("Terminal logger disabled"),
+        };
+        buf.push(WriteLogger::new(
+            settings.logger.file.filter,
+            Config::default(),
+            File::create(settings.logger.file_path).unwrap(),
+        ));
+        buf
+    })
+    .expect("Logger failed to set up");
 
-    println!("Configuring ...");
+    info!("Configuring ...");
+
     let lid = env::var("AOC_BOARD_ID").context("AOC_BOARD_ID env var missing")?;
     let session_cookie =
         env::var("AOC_SESSION_COOKIE").context("AOC_SESSION_COOKIE env var missing")?;
     let token = env::var("DISCORD_BOT_TOKEN").context("DISCORD_BOT_TOKEN env var missing")?;
 
-    println!("Starting ...");
-
+    info!("Starting ...");
     // This is the default scheme. It will automatically create as many
     // shards as is suggested by Discord.
     let scheme = ShardScheme::Auto;
+    debug!("Using scheme : {:?}", scheme);
 
     // Use intents to only receive guild message events.
     let cluster = Cluster::builder(token.clone(), Intents::GUILD_MESSAGES)
@@ -37,19 +70,24 @@ async fn main() -> Result<()> {
         .build()
         .await?;
 
+    debug!("Cluster set up");
+
     // Start up the cluster.
     let cluster_spawn = cluster.clone();
 
     // Start all shards in the cluster in the background.
     tokio::spawn(async move {
+        debug!("Spawning cluster");
         cluster_spawn.up().await;
     });
 
     // HTTP is separate from the gateway, so create a new client.
+    debug!("Setting up http client for twilight");
     let http = HttpClient::new(token.clone());
 
     // Since we only care about new messages, make the cache only
     // cache new messages.
+    debug!("Setting up cache for twilight");
     let cache = InMemoryCache::builder()
         .event_types(
             EventType::MESSAGE_CREATE
@@ -63,6 +101,7 @@ async fn main() -> Result<()> {
 
     // Process each event as they come in.
     while let Some((shard_id, event)) = events.next().await {
+        debug!("{} | Received event : {:?}", shard_id, event);
         // Update the cache with the event.
         cache.update(&event);
 
@@ -89,18 +128,18 @@ async fn get_aoc_data(
     request_url: String,
     session_cookie: String,
 ) -> Result<cached::Return<YearEvent>> {
-    println!("Attempting : {}", request_url);
+    debug!("Attempting : {}", request_url);
     let cookie = cookie::Cookie::build("session", session_cookie).finish();
     let response = reqwest::Client::new()
         .get(&request_url)
         .header(header::COOKIE, cookie.to_string())
         .send()
         .await?;
-    println!("Retrieved DATA");
+    debug!("Retrieved DATA");
 
     // Read the response body as text into a string and print it.
     let data = response.json::<YearEvent>().await?;
-    println!("Parsed DATA");
+    debug!("Parsed DATA");
 
     Ok(cached::Return::new(data))
 }
@@ -114,8 +153,9 @@ async fn handle_event(
 ) -> Result<()> {
     match event {
         Event::MessageCreate(msg) if msg.content == "!ping" => {
+            info!("Ping message");
             http.create_message(msg.channel_id)
-                .content("Pong!")?
+                .content(":ping_pong: Pong!")?
                 .await?;
         }
         Event::MessageCreate(msg) if msg.content == "!aoc" => {
@@ -123,9 +163,16 @@ async fn handle_event(
                 "https://adventofcode.com/2020/leaderboard/private/view/{}.json",
                 lid
             );
+            info!(
+                "Request from ({}) {} to get aoc board",
+                msg.author.id, msg.author.name
+            );
             let data = get_aoc_data(request_url, session_cookie).await?;
-            println!("From Cache : {}", data.was_cached);
-            println!("Creating embed");
+
+            debug!(
+                "Retrieved data (cached: {}) -> constructing message",
+                data.was_cached
+            );
             let mut embed = EmbedBuilder::new()
                 .title(format!("AoC Leaderboard [{}]", lid))?
                 .description(format!(
@@ -137,7 +184,6 @@ async fn handle_event(
             uvec.sort_by(|a, b| b.1.cmp(a.1));
 
             for (idx, user) in uvec.iter().enumerate() {
-                println!("#{} - {} - {} stars", idx + 1, user.1.name, user.1.stars);
                 embed = embed.field(
                     EmbedFieldBuilder::new(
                         format!(
@@ -152,13 +198,13 @@ async fn handle_event(
                     .build(),
                 );
             }
-            println!("sending message");
+            debug!("sending discord message to {}", msg.channel_id);
             http.create_message(msg.channel_id)
                 .embed(embed.build()?)?
                 .await?;
         }
         Event::ShardConnected(_) => {
-            println!("Connected on shard {}", shard_id);
+            info!("Connected on shard {}", shard_id);
         }
         // Other events here...
         _ => {}

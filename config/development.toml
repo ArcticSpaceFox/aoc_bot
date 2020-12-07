@@ -1,0 +1,10 @@
+[logger]
+file_path = "aocbot.log"
+
+[logger.terminal]
+enabled = true
+filter = "info"
+
+[logger.file]
+enabled = true
+filter = "debug"

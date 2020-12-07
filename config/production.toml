@@ -1,0 +1,10 @@
+[logger]
+file_path = "aocbot.log"
+
+[logger.terminal]
+enabled = true
+filter = "warn"
+
+[logger.file]
+enabled = true
+filter = "info"

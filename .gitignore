@@ -1,2 +1,4 @@
 /target
 .env
+/config/local.toml
+aocbot.log
