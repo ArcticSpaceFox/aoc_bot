@@ -3,7 +3,8 @@ extern crate log;
 extern crate simplelog;
 
 use anyhow::{Context, Result};
-use aoc_bot::YearEvent;
+use aoc_bot::{YearEvent};
+mod settings;
 
 use cached::proc_macro::cached;
 use reqwest::header;
@@ -24,12 +25,21 @@ use twilight_model::gateway::Intents;
 async fn main() -> Result<()> {
     // Loading .env file
     dotenv::dotenv().ok();
+    // Load settings file
+    let settings = settings::Settings::new();
+
+    println!("{:#?}", settings);
+    panic!();
+
     // Setting up an combined logger which will log to the terminal and a file
     let _logger = CombinedLogger::init(
         vec![
             // TODO: Read log level from config
             #[cfg(feature = "termcolor")]
-            TermLogger::new(LevelFilter::Info, Config::default(), TerminalMode::Mixed),
+            match settings.logger.terminal.enabled {
+                true => return TermLogger::new(settings.logger.terminal.filter, Config::default(), TerminalMode::Mixed),
+                false => debug!("Terminal logger disabled"),
+            },
             // TODO: make this optional
             WriteLogger::new(LevelFilter::Info, Config::default(), File::create("aocbot.log").unwrap())
         ]

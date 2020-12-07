@@ -1,0 +1,11 @@
+debug = false
+
+[logger.terminal]
+enabled = true
+# Enum (Off, Error, Warn, Info, Debug, Trace)
+filter = "Info"
+
+[logger.file]
+enabled = true
+# Enum (Off, Error, Warn, Info, Debug, Trace)
+filter = "Debug"
