@@ -143,57 +143,70 @@ async fn handle_event(
     session_cookie: String,
 ) -> Result<()> {
     match event {
-        Event::MessageCreate(msg) if msg.content == "!ping" => {
-            info!("Ping message");
-            http.create_message(msg.channel_id)
-                .content(":ping_pong: Pong!")?
-                .await?;
-        }
-        Event::MessageCreate(msg) if msg.content == "!aoc" => {
-            let request_url = format!(
-                "https://adventofcode.com/2020/leaderboard/private/view/{}.json",
-                lid
-            );
-            info!(
-                "Request from ({}) {} to get aoc board",
-                msg.author.id, msg.author.name
-            );
-            let data = get_aoc_data(request_url, session_cookie).await?;
-
-            debug!(
-                "Retrieved data (cached: {}) -> constructing message",
-                data.was_cached
-            );
-            let mut embed = EmbedBuilder::new()
-                .title(format!("AoC Leaderboard [{}]", lid))?
-                .description(format!(
-                    "Here is your current Leaderboard - Cached [{}]",
-                    data.was_cached
-                ))?;
-
-            let mut uvec: Vec<_> = data.members.iter().collect();
-            uvec.sort_by(|a, b| b.1.cmp(a.1));
-
-            for (idx, user) in uvec.iter().enumerate() {
-                embed = embed.field(
-                    EmbedFieldBuilder::new(
-                        format!(
-                            "#{} - {} - {} score",
-                            idx + 1,
-                            user.1.name,
-                            user.1.local_score
-                        ),
-                        format!("Solved {} Challenges", user.1.stars),
-                    )?
-                    .inline()
-                    .build(),
-                );
+        Event::MessageCreate(msg) => match msg.content.as_str() {
+            "!ping" => {
+                info!("Ping message");
+                http.create_message(msg.channel_id)
+                    .content(":ping_pong: Pong!")?
+                    .await?;
             }
-            debug!("sending discord message to {}", msg.channel_id);
-            http.create_message(msg.channel_id)
-                .embed(embed.build()?)?
-                .await?;
-        }
+            "!aoc" => {
+                let request_url = format!(
+                    "https://adventofcode.com/2020/leaderboard/private/view/{}.json",
+                    lid
+                );
+                info!(
+                    "Request from ({}) {} to get aoc board",
+                    msg.author.id, msg.author.name
+                );
+                let data = get_aoc_data(request_url, session_cookie).await?;
+
+                debug!(
+                    "Retrieved data (cached: {}) -> constructing message",
+                    data.was_cached
+                );
+                let mut embed = EmbedBuilder::new()
+                    .title(format!("AoC Leaderboard [{}]", lid))?
+                    .description(format!(
+                        "Here is your current Leaderboard - Cached [{}]",
+                        data.was_cached
+                    ))?;
+
+                let mut uvec: Vec<_> = data.members.iter().collect();
+                uvec.sort_by(|a, b| b.1.cmp(a.1));
+
+                for (idx, user) in uvec.iter().enumerate() {
+                    embed = embed.field(
+                        EmbedFieldBuilder::new(
+                            format!(
+                                "#{} - {} - {} score",
+                                idx + 1,
+                                user.1.name,
+                                user.1.local_score
+                            ),
+                            format!("Solved {} Challenges", user.1.stars),
+                        )?
+                        .inline()
+                        .build(),
+                    );
+                }
+                debug!("sending discord message to {}", msg.channel_id);
+                http.create_message(msg.channel_id)
+                    .embed(embed.build()?)?
+                    .await?;
+            }
+            "!42" => {
+                info!("42 message");
+                http.create_message(msg.channel_id)
+                    .content(
+                        ":exploding_head: \
+                    The Answer to the Ultimate Question of Life, \
+                    the Universe, and Everything is 42",
+                    )?
+                    .await?;
+            }
+            _ => {}
+        },
         Event::ShardConnected(_) => {
             info!("Connected on shard {}", shard_id);
         }
