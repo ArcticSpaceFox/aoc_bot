@@ -16,7 +16,7 @@ use twilight_gateway::{
 use twilight_http::Client as HttpClient;
 use twilight_model::gateway::Intents;
 
-use aoc_bot::aoc::{self, LeaderboardStats};
+use aoc_bot::aoc::{self, LeaderboardStats, User};
 use aoc_bot::settings::Settings;
 
 #[tokio::main]
@@ -171,7 +171,11 @@ async fn handle_event(
                     embed = embed.field(
                         EmbedFieldBuilder::new(
                             format!("#{} - {} - {} score", idx + 1, user.name, user.local_score),
-                            format!("Solved {} Challenges", user.stars),
+                            format!(
+                                "⭐ Solved {} Challenges\n⏱️ Last at {}",
+                                user.stars,
+                                latest_challenge(&user)
+                            ),
                         )?
                         .inline()
                         .build(),
@@ -202,4 +206,26 @@ async fn handle_event(
     }
 
     Ok(())
+}
+
+/// Get the latest completion time of the latest challenge from a single user. First check whether
+/// part 1 or 2 was solved latest (as part 2 may not be solved yet) for each day and then compares
+/// this timestamp with the other days.
+fn latest_challenge(user: &User) -> String {
+    let max = user
+        .completion_day_level
+        .values()
+        .map(|day| {
+            if let Some(part2) = &day.part2 {
+                day.part1.get_star_ts.max(part2.get_star_ts)
+            } else {
+                day.part1.get_star_ts
+            }
+        })
+        .max();
+
+    match max {
+        None => "...never".to_owned(),
+        Some(ts) => ts.to_string(),
+    }
 }
