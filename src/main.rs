@@ -1,16 +1,11 @@
-#[macro_use]
-extern crate log;
-extern crate simplelog;
+use std::fs::File;
+use std::iter::FromIterator;
+use std::sync::Arc;
 
 use anyhow::Result;
-use aoc_bot::YearEvent;
-mod settings;
-
 use cached::proc_macro::cached;
-use reqwest::header;
-use simplelog::*;
-use std::fs::File;
-
+use log::{debug, info};
+use simplelog::{CombinedLogger, Config, SharedLogger, TermLogger, TerminalMode, WriteLogger};
 use tokio::stream::StreamExt;
 use twilight_cache_inmemory::{EventType, InMemoryCache};
 use twilight_embed_builder::{EmbedBuilder, EmbedFieldBuilder};
@@ -21,12 +16,15 @@ use twilight_gateway::{
 use twilight_http::Client as HttpClient;
 use twilight_model::gateway::Intents;
 
+use aoc_bot::aoc::{self, LeaderboardStats};
+use aoc_bot::settings::Settings;
+
 #[tokio::main]
 async fn main() -> Result<()> {
     // Loading .env file
     dotenv::dotenv().ok();
     // Load settings file
-    let settings = settings::Settings::new()?;
+    let settings = Settings::new()?;
 
     // Setting up an combined logger which will log to the terminal and a file
     let _logger = CombinedLogger::init({
@@ -90,6 +88,9 @@ async fn main() -> Result<()> {
 
     let mut events = cluster.events();
 
+    let board_id = Arc::new(settings.aoc.board_id.into_boxed_str());
+    let session_cookie = Arc::new(settings.aoc.session_cookie.into_boxed_str());
+
     // Process each event as they come in.
     while let Some((shard_id, event)) = events.next().await {
         debug!("{} | Received event : {:?}", shard_id, event);
@@ -100,8 +101,8 @@ async fn main() -> Result<()> {
             shard_id,
             event,
             http.clone(),
-            settings.aoc.board_id.clone(),
-            settings.aoc.session_cookie.clone(),
+            Arc::clone(&board_id),
+            Arc::clone(&session_cookie),
         );
 
         tokio::spawn(async {
@@ -114,33 +115,28 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-#[cached(time = 7200, result = true, with_cached_flag = true)]
+#[cached(
+    time = 7200,
+    result = true,
+    with_cached_flag = true,
+    key = "String",
+    convert = r#"{ format!("{}-{}", session_cookie, leaderboard_id) }"#
+)]
 async fn get_aoc_data(
-    request_url: String,
-    session_cookie: String,
-) -> Result<cached::Return<YearEvent>> {
-    debug!("Attempting : {}", request_url);
-    let cookie = cookie::Cookie::build("session", session_cookie).finish();
-    let response = reqwest::Client::new()
-        .get(&request_url)
-        .header(header::COOKIE, cookie.to_string())
-        .send()
-        .await?;
-    debug!("Retrieved DATA");
-
-    // Read the response body as text into a string and print it.
-    let data = response.json::<YearEvent>().await?;
-    debug!("Parsed DATA");
-
-    Ok(cached::Return::new(data))
+    session_cookie: &str,
+    leaderboard_id: &str,
+) -> Result<cached::Return<LeaderboardStats>> {
+    Ok(cached::Return::new(
+        aoc::get_private_leaderboard_stats(&session_cookie, 2020, &leaderboard_id).await?,
+    ))
 }
 
 async fn handle_event(
     shard_id: u64,
     event: Event,
     http: HttpClient,
-    lid: String,
-    session_cookie: String,
+    board_id: Arc<Box<str>>,
+    session_cookie: Arc<Box<str>>,
 ) -> Result<()> {
     match event {
         Event::MessageCreate(msg) => match msg.content.as_str() {
@@ -151,40 +147,31 @@ async fn handle_event(
                     .await?;
             }
             "!aoc" => {
-                let request_url = format!(
-                    "https://adventofcode.com/2020/leaderboard/private/view/{}.json",
-                    lid
-                );
                 info!(
                     "Request from ({}) {} to get aoc board",
                     msg.author.id, msg.author.name
                 );
-                let data = get_aoc_data(request_url, session_cookie).await?;
+                let data = get_aoc_data(&session_cookie, &board_id).await?;
 
                 debug!(
                     "Retrieved data (cached: {}) -> constructing message",
                     data.was_cached
                 );
                 let mut embed = EmbedBuilder::new()
-                    .title(format!("AoC Leaderboard [{}]", lid))?
+                    .title(format!("AoC Leaderboard [{}]", board_id))?
                     .description(format!(
                         "Here is your current Leaderboard - Cached [{}]",
                         data.was_cached
                     ))?;
 
-                let mut uvec: Vec<_> = data.members.iter().collect();
-                uvec.sort_by(|a, b| b.1.cmp(a.1));
+                let mut uvec = Vec::from_iter(data.members.values());
+                uvec.sort_by(|a, b| b.local_score.cmp(&a.local_score));
 
                 for (idx, user) in uvec.iter().enumerate() {
                     embed = embed.field(
                         EmbedFieldBuilder::new(
-                            format!(
-                                "#{} - {} - {} score",
-                                idx + 1,
-                                user.1.name,
-                                user.1.local_score
-                            ),
-                            format!("Solved {} Challenges", user.1.stars),
+                            format!("#{} - {} - {} score", idx + 1, user.name, user.local_score),
+                            format!("Solved {} Challenges", user.stars),
                         )?
                         .inline()
                         .build(),

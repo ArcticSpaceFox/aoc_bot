@@ -1,6 +1,7 @@
-use config::{Config, ConfigError, Environment, File};
 use std::{env, str::FromStr};
 
+use config::{Config, ConfigError, Environment, File};
+use log::info;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -64,7 +65,8 @@ impl ToString for RunMode {
         match self {
             Self::Development => "development",
             Self::Production => "production",
-        }.into()
+        }
+        .into()
     }
 }
 
@@ -95,7 +97,7 @@ impl Settings {
         // Note that this file is _optional_
         let env = RunMode::from_str(&env::var("RUN_MODE").unwrap_or_else(|_| "development".into()))
             .map_err(|_| ConfigError::Message("invalid run mode".into()))?;
-        
+
         // Add in a local configuration file
         // This file shouldn't be checked in to git
         s.merge(File::with_name("config/local").required(false))?;
