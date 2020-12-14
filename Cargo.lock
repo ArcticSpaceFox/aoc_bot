@@ -36,6 +36,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "cached",
+ "chrono",
  "config",
  "cookie",
  "dotenv",
@@ -210,6 +211,7 @@ dependencies = [
  "libc",
  "num-integer",
  "num-traits 0.2.14",
+ "serde 1.0.118",
  "time 0.1.44",
  "winapi 0.3.9",
 ]

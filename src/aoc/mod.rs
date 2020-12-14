@@ -1,9 +1,14 @@
+//! Advent of Code API to retrieve leaderboard statistics.
+
 use std::collections::HashMap;
 
 use anyhow::Result;
+use chrono::prelude::*;
 use cookie::Cookie;
 use reqwest::header;
 use serde::Deserialize;
+
+mod de;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct LeaderboardStats {
@@ -32,9 +37,12 @@ pub struct Day {
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Challenge {
-    pub get_star_ts: String,
+    #[serde(deserialize_with = "de::string_timestamp")]
+    pub get_star_ts: DateTime<Utc>,
 }
 
+/// Get the latest statistics from a private leaderboard. It is asked by the AoC website owners to
+/// not request this data more often than every 15 minutes.
 pub async fn get_private_leaderboard_stats(
     session_cookie: &str,
     event: u16,
