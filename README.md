@@ -10,6 +10,24 @@ This bot is supposed to be fast, low-overhead (saves money on server hosting) an
 
 For configuration details, please check out the [CONFIGURATION](CONFIGURATION.md) document.
 
+## Docker
+
+The project provides a `Dockerfile` and a sample `docker-compose.yml`. You can build the and run it
+with Docker directly:
+
+```sh
+docker build -t aoc_bot .
+docker run --rm -it --env-file .env aoc_bot
+```
+
+Or you can run it with Docker Compose:
+
+```sh
+docker-compose up
+```
+
+All the above commands assume your auth configuration is set as env vars in a `.env` file.
+
 ## What still needs to be implemented what can be improved?
 
 - [ ] a cronjob like update mode

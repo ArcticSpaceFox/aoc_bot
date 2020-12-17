@@ -11,10 +11,10 @@ chrono = { version = "0.4.19", features = ["serde"] }
 cookie = "0.14.3"
 dotenv = "0.15.0"
 log = "0.4.11"
-reqwest = { version = "0.10.9", default-features = false, features = ["json", "rustls-tls"] }
+reqwest = { version = "0.10.10", default-features = false, features = ["json", "rustls-tls"] }
 serde = { version = "1.0.118", features = ["derive"] }
 simplelog = "0.8.0"
-tokio = { version = "0.2.23", features = ["fs", "macros"] }
+tokio = { version = "0.2.23", features = ["fs", "macros", "signal"] }
 toml = "0.5.7"
 twilight-cache-inmemory = "0.2.3"
 twilight-embed-builder = "0.2.0"
