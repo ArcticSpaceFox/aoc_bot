@@ -112,7 +112,7 @@ the `filter`.
 This backend writes logs to a file instead of the terminal and has two settings, the `filter` and
 the `file`.
 
-#### `file`
+#### `path`
 
 This setting defines the path of a file that the backend will append logs to. If the file is missing
 it will be automatically created.
