@@ -1,8 +1,12 @@
 # Fill in the authentication values here or pass them as env vars with AOC_BOARD_ID,
 # AOC_SESSION_COOKIE and DISCORD_BOT_TOKEN.
 [aoc]
-board_id=""
-session_cookie=""
+board_id = ""
+session_cookie = ""
 
 [discord]
-bot_token=""
+bot_token = ""
+
+[discord.schedule]
+interval = 7200
+channel_id = 0

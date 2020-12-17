@@ -1,24 +1,25 @@
 use std::fs::File;
-use std::iter::FromIterator;
 use std::sync::Arc;
+use std::time::Duration;
 
 use anyhow::{Context, Result};
 use cached::proc_macro::cached;
 use chrono_humanize::Humanize;
-use log::{debug, error, info};
-use simplelog::{CombinedLogger, Config, SharedLogger, TermLogger, TerminalMode, WriteLogger};
-use tokio::stream::StreamExt;
-use twilight_cache_inmemory::{EventType, InMemoryCache};
-use twilight_embed_builder::{EmbedBuilder, EmbedFieldBuilder};
-use twilight_gateway::{
-    cluster::{Cluster, ShardScheme},
-    Event,
+use log::{debug, info};
+use simplelog::{
+    CombinedLogger, ConfigBuilder, SharedLogger, TermLogger, TerminalMode, WriteLogger,
 };
+use tokio::sync::mpsc;
+use tokio::time;
+use twilight_embed_builder::{EmbedBuilder, EmbedFieldBuilder};
 use twilight_http::Client as HttpClient;
-use twilight_model::gateway::Intents;
 
-use aoc_bot::aoc::{self, LeaderboardStats, User};
-use aoc_bot::settings::{Logging, Settings};
+use aoc_bot::{
+    aoc::{self, LeaderboardStats, User},
+    discord,
+    models::{Event, Message},
+    settings::{Logging, Settings},
+};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -30,64 +31,54 @@ async fn main() -> Result<()> {
     setup_logger(&settings.logging)?;
 
     info!("Starting ...");
-    // This is the default scheme. It will automatically create as many
-    // shards as is suggested by Discord.
-    let scheme = ShardScheme::Auto;
-    debug!("Using scheme : {:?}", scheme);
+    let (mut events_tx, mut events_rx) = mpsc::channel(1);
+    discord::start(&settings.discord, events_tx.clone()).await?;
 
-    // Use intents to only receive guild message events.
-    let cluster = Cluster::builder(settings.discord.bot_token.clone(), Intents::GUILD_MESSAGES)
-        .shard_scheme(scheme)
-        .build()
-        .await?;
+    if let Some(schedule) = &settings.discord.schedule {
+        debug!("Setting up scheduled leaderboard messages");
 
-    debug!("Cluster set up");
+        let interval = schedule.interval;
+        let channel_id = schedule.channel_id;
 
-    // Start up the cluster.
-    let cluster_spawn = cluster.clone();
+        tokio::spawn(async move {
+            let mut ticker = time::interval(Duration::from_secs(interval));
+            // First tick completes immediately so we wait on the first tick here once to not
+            // directly send statistics whenever the server starts up.
+            ticker.tick().await;
 
-    // Start all shards in the cluster in the background.
-    tokio::spawn(async move {
-        debug!("Spawning cluster");
-        cluster_spawn.up().await;
+            loop {
+                ticker.tick().await;
+                debug!("Sending new schedule event");
 
-        if let Err(e) = tokio::signal::ctrl_c().await {
-            error!("Failed setting up CTRL+C listener: {}", e);
-        }
+                let res = events_tx
+                    .send(Event::AdventOfCode(Message {
+                        shard_id: 0,
+                        channel_id,
+                        author: None,
+                    }))
+                    .await;
 
-        debug!("Stopping cluster");
-        cluster_spawn.down();
-    });
+                if res.is_err() {
+                    break;
+                }
+            }
+        });
+    }
 
     // HTTP is separate from the gateway, so create a new client.
     debug!("Setting up http client for twilight");
-    let http = HttpClient::new(settings.discord.bot_token.clone());
-
-    // Since we only care about new messages, make the cache only
-    // cache new messages.
-    debug!("Setting up cache for twilight");
-    let cache = InMemoryCache::builder()
-        .event_types(
-            EventType::MESSAGE_CREATE
-                | EventType::MESSAGE_DELETE
-                | EventType::MESSAGE_DELETE_BULK
-                | EventType::MESSAGE_UPDATE,
-        )
-        .build();
-
-    let mut events = cluster.events();
+    let http = discord::new_client(&settings.discord);
 
     let board_id = Arc::new(settings.aoc.board_id.into_boxed_str());
     let session_cookie = Arc::new(settings.aoc.session_cookie.into_boxed_str());
 
     // Process each event as they come in.
-    while let Some((shard_id, event)) = events.next().await {
-        debug!("{} | Received event : {:?}", shard_id, event);
-        // Update the cache with the event.
-        cache.update(&event);
+    while let Some(event) = events_rx.recv().await {
+        if matches!(event, Event::Shutdown) {
+            break;
+        }
 
         let fut = handle_event(
-            shard_id,
             event,
             http.clone(),
             Arc::clone(&board_id),
@@ -116,81 +107,78 @@ async fn get_aoc_data(
     leaderboard_id: &str,
 ) -> Result<cached::Return<LeaderboardStats>> {
     Ok(cached::Return::new(
-        aoc::get_private_leaderboard_stats(&session_cookie, 2020, &leaderboard_id).await?,
+        aoc::get_private_leaderboard_stats(session_cookie, 2020, leaderboard_id).await?,
     ))
 }
 
 async fn handle_event(
-    shard_id: u64,
     event: Event,
     http: HttpClient,
     board_id: Arc<Box<str>>,
     session_cookie: Arc<Box<str>>,
 ) -> Result<()> {
     match event {
-        Event::MessageCreate(msg) => match msg.content.as_str() {
-            "!ping" => {
-                info!("Ping message");
-                http.create_message(msg.channel_id)
-                    .content(":ping_pong: Pong!")?
-                    .await?;
-            }
-            "!aoc" => {
+        Event::Ping(msg) => {
+            info!("Ping message");
+            http.create_message(msg.channel_id.into())
+                .content(":ping_pong: Pong!")?
+                .await?;
+        }
+        Event::AdventOfCode(msg) => {
+            if let Some(author) = msg.author {
                 info!(
                     "Request from ({}) {} to get aoc board",
-                    msg.author.id, msg.author.name
+                    author.id, author.name
                 );
-                let data = get_aoc_data(&session_cookie, &board_id).await?;
-
-                debug!(
-                    "Retrieved data (cached: {}) -> constructing message",
-                    data.was_cached
-                );
-                let mut embed = EmbedBuilder::new()
-                    .title(format!("AoC Leaderboard [{}]", board_id))?
-                    .description(format!(
-                        "Here is your current Leaderboard - Cached [{}]",
-                        data.was_cached
-                    ))?;
-
-                let mut uvec = Vec::from_iter(data.members.values());
-                uvec.sort_by(|a, b| b.local_score.cmp(&a.local_score));
-
-                for (idx, user) in uvec.iter().enumerate() {
-                    embed = embed.field(
-                        EmbedFieldBuilder::new(
-                            format!("#{} - {} - {} score", idx + 1, user.name, user.local_score),
-                            format!(
-                                "⭐ Solved {} Challenges\n⏱️ Last at {}",
-                                user.stars,
-                                latest_challenge(&user)
-                            ),
-                        )?
-                        .inline()
-                        .build(),
-                    );
-                }
-                debug!("sending discord message to {}", msg.channel_id);
-                http.create_message(msg.channel_id)
-                    .embed(embed.build()?)?
-                    .await?;
+            } else {
+                info!("Automated request");
             }
-            "!42" => {
-                info!("42 message");
-                http.create_message(msg.channel_id)
-                    .content(
-                        ":exploding_head: \
+
+            let data = get_aoc_data(&session_cookie, &board_id).await?;
+
+            debug!(
+                "Retrieved data (cached: {}) -> constructing message",
+                data.was_cached
+            );
+            let mut embed = EmbedBuilder::new()
+                .title(format!("AoC Leaderboard [{}]", board_id))?
+                .description(format!(
+                    "Here is your current Leaderboard - Cached [{}]",
+                    data.was_cached
+                ))?;
+
+            let mut uvec = data.members.values().collect::<Vec<_>>();
+            uvec.sort_by(|a, b| b.local_score.cmp(&a.local_score));
+
+            for (idx, user) in uvec.iter().enumerate() {
+                embed = embed.field(
+                    EmbedFieldBuilder::new(
+                        format!("#{} - {} - {} score", idx + 1, user.name, user.local_score),
+                        format!(
+                            "⭐ Solved {} Challenges\n⏱️ Last at {}",
+                            user.stars,
+                            latest_challenge(user)
+                        ),
+                    )?
+                    .inline()
+                    .build(),
+                );
+            }
+            debug!("sending discord message to {}", msg.channel_id);
+            http.create_message(msg.channel_id.into())
+                .embed(embed.build()?)?
+                .await?;
+        }
+        Event::FourtyTwo(msg) => {
+            info!("42 message");
+            http.create_message(msg.channel_id.into())
+                .content(
+                    ":exploding_head: \
                     The Answer to the Ultimate Question of Life, \
                     the Universe, and Everything is 42",
-                    )?
-                    .await?;
-            }
-            _ => {}
-        },
-        Event::ShardConnected(_) => {
-            info!("Connected on shard {}", shard_id);
+                )?
+                .await?;
         }
-        // Other events here...
         _ => {}
     }
 
@@ -215,7 +203,7 @@ fn latest_challenge(user: &User) -> String {
 
     match max {
         None => "...never".to_owned(),
-        Some(ts) =>ts.humanize(),
+        Some(ts) => ts.humanize(),
     }
 }
 
@@ -223,11 +211,12 @@ fn latest_challenge(user: &User) -> String {
 /// or what level it logs at is defined by the given configuration.
 fn setup_logger(config: &Logging) -> Result<()> {
     let mut loggers = Vec::<Box<dyn SharedLogger>>::new();
+    let log_config = ConfigBuilder::new().add_filter_allow_str("aoc_bot").build();
 
     if let Some(terminal) = &config.terminal {
         loggers.push(TermLogger::new(
             terminal.filter,
-            Config::default(),
+            log_config.clone(),
             TerminalMode::Mixed,
         ));
     };
@@ -235,7 +224,7 @@ fn setup_logger(config: &Logging) -> Result<()> {
     if let Some(file) = &config.file {
         loggers.push(WriteLogger::new(
             file.base.filter,
-            Config::default(),
+            log_config,
             File::create(&file.path)?,
         ));
     }
