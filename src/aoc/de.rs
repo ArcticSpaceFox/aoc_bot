@@ -18,7 +18,7 @@ struct TimestampVisitor;
 impl<'de> Visitor<'de> for TimestampVisitor {
     type Value = DateTime<Utc>;
 
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str("a UNIX timestamp encoded as string")
     }
 
