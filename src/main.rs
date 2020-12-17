@@ -2,7 +2,7 @@ use std::fs::File;
 use std::iter::FromIterator;
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use cached::proc_macro::cached;
 use log::{debug, info};
 use simplelog::{CombinedLogger, Config, SharedLogger, TermLogger, TerminalMode, WriteLogger};
@@ -17,35 +17,16 @@ use twilight_http::Client as HttpClient;
 use twilight_model::gateway::Intents;
 
 use aoc_bot::aoc::{self, LeaderboardStats, User};
-use aoc_bot::settings::Settings;
+use aoc_bot::settings::{Logging, Settings};
 
 #[tokio::main]
 async fn main() -> Result<()> {
     // Loading .env file
     dotenv::dotenv().ok();
     // Load settings file
-    let settings = Settings::new()?;
+    let settings = Settings::new().await?;
 
-    // Setting up an combined logger which will log to the terminal and a file
-    let _logger = CombinedLogger::init({
-        let mut buf = Vec::<Box<dyn SharedLogger>>::new();
-        // TODO: Read log level from config
-        match settings.logger.terminal.enabled {
-            true => buf.push(TermLogger::new(
-                settings.logger.terminal.filter,
-                Config::default(),
-                TerminalMode::Mixed,
-            )),
-            false => debug!("Terminal logger disabled"),
-        };
-        buf.push(WriteLogger::new(
-            settings.logger.file.filter,
-            Config::default(),
-            File::create(settings.logger.file_path).unwrap(),
-        ));
-        buf
-    })
-    .expect("Logger failed to set up");
+    setup_logger(&settings.logging)?;
 
     info!("Starting ...");
     // This is the default scheme. It will automatically create as many
@@ -228,4 +209,28 @@ fn latest_challenge(user: &User) -> String {
         None => "...never".to_owned(),
         Some(ts) => ts.to_string(),
     }
+}
+
+/// Set up an combined logger which will log to the terminal and a file. Whether a logger is enabled
+/// or what level it logs at is defined by the given configuration.
+fn setup_logger(config: &Logging) -> Result<()> {
+    let mut loggers = Vec::<Box<dyn SharedLogger>>::new();
+
+    if let Some(terminal) = &config.terminal {
+        loggers.push(TermLogger::new(
+            terminal.filter,
+            Config::default(),
+            TerminalMode::Mixed,
+        ));
+    };
+
+    if let Some(file) = &config.file {
+        loggers.push(WriteLogger::new(
+            file.base.filter,
+            Config::default(),
+            File::create(&file.path)?,
+        ));
+    }
+
+    CombinedLogger::init(loggers).context("logger failed to set up")
 }
