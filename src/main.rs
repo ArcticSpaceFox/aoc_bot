@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use cached::proc_macro::cached;
-use log::{debug, info};
+use log::{debug, error, info};
 use simplelog::{CombinedLogger, Config, SharedLogger, TermLogger, TerminalMode, WriteLogger};
 use tokio::stream::StreamExt;
 use twilight_cache_inmemory::{EventType, InMemoryCache};
@@ -49,6 +49,13 @@ async fn main() -> Result<()> {
     tokio::spawn(async move {
         debug!("Spawning cluster");
         cluster_spawn.up().await;
+
+        if let Err(e) = tokio::signal::ctrl_c().await {
+            error!("Failed setting up CTRL+C listener: {}", e);
+        }
+
+        debug!("Stopping cluster");
+        cluster_spawn.down();
     });
 
     // HTTP is separate from the gateway, so create a new client.

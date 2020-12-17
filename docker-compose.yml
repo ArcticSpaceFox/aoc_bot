@@ -1,0 +1,8 @@
+version: "3"
+
+services:
+  aoc-bot:
+    build: .
+    env_file: .env
+    volumes:
+      - "./config/auth.toml:/data/config/auth.toml"
