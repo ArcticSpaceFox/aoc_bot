@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use cached::proc_macro::cached;
+use chrono_humanize::Humanize;
 use log::{debug, error, info};
 use simplelog::{CombinedLogger, Config, SharedLogger, TermLogger, TerminalMode, WriteLogger};
 use tokio::stream::StreamExt;
@@ -214,7 +215,7 @@ fn latest_challenge(user: &User) -> String {
 
     match max {
         None => "...never".to_owned(),
-        Some(ts) => ts.to_string(),
+        Some(ts) =>ts.humanize(),
     }
 }
 
