@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-use chrono::prelude::*;
+use chrono::{DateTime, TimeZone, Utc};
 use serde::de::{self, Deserializer, Visitor};
 
 /// Deserialize a UNIX timestamp that is encoded as string instead of an integer.

@@ -1,8 +1,8 @@
 # Fill in the authentication values here or pass them as env vars with AOC_BOARD_ID,
 # AOC_SESSION_COOKIE and DISCORD_BOT_TOKEN.
 [aoc]
-board_id = ""
-session_cookie = ""
+board_id="975781"
+session_cookie="53616c7465645f5fcc5635dd646511a52739d2f22acc93fa93aa4e63bc6b3505213043b75e2622a5c0564d3e3ec8a9dd"
 
 [discord]
-bot_token = ""
+bot_token="Nzg0Mzg2OTg0NDkxNzQ1Mjky.X8ojTg.lvH9rqEhaCp55fs05B02q3Bjbag"
