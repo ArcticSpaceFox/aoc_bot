@@ -63,6 +63,14 @@ pub struct AdventOfCode {
 pub struct Discord {
     /// A token to authenticate against the Discord API as a bot and send messages.
     pub bot_token: String,
+    #[serde(default)]
+    pub schedule: Option<Schedule>,
+}
+
+#[derive(Deserialize)]
+pub struct Schedule {
+    pub interval: u64,
+    pub channel_id: u64,
 }
 
 /// A wrapper for the [LevelFilter] that allows to use it in [serde], as it doesn't provide support
