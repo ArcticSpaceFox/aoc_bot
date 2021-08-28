@@ -5,20 +5,21 @@ authors = ["Sm03leBr00t <Sm03leBr00t@protonmail.com>"]
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.35"
-cached = "0.22.0"
-cookie = "0.14.3"
-dotenv = "0.15.0"
-log = "0.4.11"
-reqwest = { version = "0.10.10", default-features = false, features = ["json", "rustls-tls"] }
-serde = { version = "1.0.118", features = ["derive"] }
-simplelog = "0.8.0"
-tokio = { version = "0.2.23", features = ["fs", "macros", "signal"] }
-toml = "0.5.7"
-twilight-cache-inmemory = "0.2.3"
-twilight-embed-builder = "0.2.0"
-twilight-gateway = "0.2.5"
-twilight-http = "0.2.5"
-twilight-model = "0.2.4"
+anyhow = "1.0.43"
+cached = "0.25.0"
 chrono = "0.4.19"
-chrono-humanize = "0.1.1"
+chrono-humanize = "0.2.1"
+cookie = "0.15.1"
+dotenv = "0.15.0"
+futures-util = "0.3.16"
+log = "0.4.14"
+reqwest = { version = "0.11.4", default-features = false, features = ["json", "rustls-tls"] }
+serde = { version = "1.0.129", features = ["derive"] }
+simplelog = "0.10.0"
+tokio = { version = "1.10.1", features = ["fs", "macros", "signal"] }
+toml = "0.5.8"
+twilight-cache-inmemory = "0.6.0"
+twilight-embed-builder = "0.6.0"
+twilight-gateway = "0.6.1"
+twilight-http = "0.6.2"
+twilight-model = "0.6.1"
