@@ -1,11 +1,11 @@
 use anyhow::Result;
+use futures_util::stream::StreamExt;
 use log::{debug, error, info};
-use tokio::stream::StreamExt;
 use tokio::sync::mpsc::Sender;
-use twilight_cache_inmemory::{EventType, InMemoryCache};
+use twilight_cache_inmemory::{InMemoryCache, ResourceType};
 use twilight_gateway::{
-    cluster::{Cluster, ShardScheme},
-    Event,
+    cluster::{Cluster, Events, ShardScheme},
+    Event, EventTypeFlags,
 };
 use twilight_http::Client as HttpClient;
 use twilight_model::user::User;
@@ -20,15 +20,21 @@ pub async fn start(settings: &Discord, sender: Sender<crate::models::Event>) -> 
     debug!("Using scheme : {:?}", scheme);
 
     // Use intents to only receive guild message events.
-    let cluster = Cluster::builder(settings.bot_token.clone(), Intents::GUILD_MESSAGES)
+    let (cluster, events) = Cluster::builder(settings.bot_token.clone(), Intents::GUILD_MESSAGES)
         .shard_scheme(scheme)
+        .event_types(
+            EventTypeFlags::MESSAGE_CREATE
+                | EventTypeFlags::MESSAGE_DELETE
+                | EventTypeFlags::MESSAGE_DELETE_BULK
+                | EventTypeFlags::MESSAGE_UPDATE,
+        )
         .build()
         .await?;
 
     debug!("Cluster set up");
 
     // Start up the cluster.
-    let cluster_spawn = cluster.clone();
+    let cluster_spawn = cluster;
 
     // Start all shards in the cluster in the background.
     tokio::spawn(async move {
@@ -47,27 +53,20 @@ pub async fn start(settings: &Discord, sender: Sender<crate::models::Event>) -> 
     // cache new messages.
     debug!("Setting up cache for twilight");
     let cache = InMemoryCache::builder()
-        .event_types(
-            EventType::MESSAGE_CREATE
-                | EventType::MESSAGE_DELETE
-                | EventType::MESSAGE_DELETE_BULK
-                | EventType::MESSAGE_UPDATE,
-        )
+        .resource_types(ResourceType::MESSAGE)
         .build();
 
     // Handle Discord events on a separate task.
-    tokio::spawn(handle_events(cluster, cache, sender));
+    tokio::spawn(handle_events(events, cache, sender));
 
     Ok(())
 }
 
 async fn handle_events(
-    cluster: Cluster,
+    mut events: Events,
     cache: InMemoryCache,
-    mut sender: Sender<crate::models::Event>,
+    sender: Sender<crate::models::Event>,
 ) {
-    let mut events = cluster.events();
-
     while let Some((shard_id, event)) = events.next().await {
         debug!("{} | Received event : {:?}", shard_id, event);
         cache.update(&event);

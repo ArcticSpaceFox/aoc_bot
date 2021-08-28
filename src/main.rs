@@ -7,7 +7,7 @@ use cached::proc_macro::cached;
 use chrono_humanize::Humanize;
 use log::{debug, info};
 use simplelog::{
-    CombinedLogger, ConfigBuilder, SharedLogger, TermLogger, TerminalMode, WriteLogger,
+    ColorChoice, CombinedLogger, ConfigBuilder, SharedLogger, TermLogger, TerminalMode, WriteLogger,
 };
 use tokio::sync::mpsc;
 use tokio::time;
@@ -31,7 +31,7 @@ async fn main() -> Result<()> {
     setup_logger(&settings.logging)?;
 
     info!("Starting ...");
-    let (mut events_tx, mut events_rx) = mpsc::channel(1);
+    let (events_tx, mut events_rx) = mpsc::channel(1);
     discord::start(&settings.discord, events_tx.clone()).await?;
 
     if let Some(schedule) = &settings.discord.schedule {
@@ -122,6 +122,7 @@ async fn handle_event(
             info!("Ping message");
             http.create_message(msg.channel_id.into())
                 .content(":ping_pong: Pong!")?
+                .exec()
                 .await?;
         }
         Event::AdventOfCode(msg) => {
@@ -141,11 +142,11 @@ async fn handle_event(
                 data.was_cached
             );
             let mut embed = EmbedBuilder::new()
-                .title(format!("AoC Leaderboard [{}]", board_id))?
+                .title(format!("AoC Leaderboard [{}]", board_id))
                 .description(format!(
                     "Here is your current Leaderboard - Cached [{}]",
                     data.was_cached
-                ))?;
+                ));
 
             let mut uvec = data.members.values().collect::<Vec<_>>();
             uvec.sort_by(|a, b| b.local_score.cmp(&a.local_score));
@@ -159,14 +160,15 @@ async fn handle_event(
                             user.stars,
                             latest_challenge(user)
                         ),
-                    )?
+                    )
                     .inline()
                     .build(),
                 );
             }
             debug!("sending discord message to {}", msg.channel_id);
             http.create_message(msg.channel_id.into())
-                .embed(embed.build()?)?
+                .embeds(&[embed.build()?])?
+                .exec()
                 .await?;
         }
         Event::FourtyTwo(msg) => {
@@ -177,6 +179,7 @@ async fn handle_event(
                     The Answer to the Ultimate Question of Life, \
                     the Universe, and Everything is 42",
                 )?
+                .exec()
                 .await?;
         }
         _ => {}
@@ -218,6 +221,7 @@ fn setup_logger(config: &Logging) -> Result<()> {
             terminal.filter,
             log_config.clone(),
             TerminalMode::Mixed,
+            ColorChoice::Auto,
         ));
     };
 
