@@ -8,7 +8,6 @@ pub enum Event {
 
 #[derive(Debug)]
 pub struct Message {
-    pub shard_id: u64,
     pub channel_id: u64,
     pub author: Option<Author>,
 }

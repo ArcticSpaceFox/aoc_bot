@@ -3,50 +3,34 @@ use futures_util::stream::StreamExt;
 use log::{debug, error, info};
 use tokio::sync::mpsc::Sender;
 use twilight_cache_inmemory::{InMemoryCache, ResourceType};
-use twilight_gateway::{
-    cluster::{Cluster, Events, ShardScheme},
-    Event, EventTypeFlags,
-};
+use twilight_gateway::{shard::Events, Event, EventTypeFlags, Shard};
 use twilight_http::Client as HttpClient;
-use twilight_model::user::User;
-use twilight_model::{channel::Message, gateway::Intents};
+use twilight_model::{channel::Message, gateway::Intents, user::User};
 
 use crate::settings::Discord;
 
 pub async fn start(settings: &Discord, sender: Sender<crate::models::Event>) -> Result<()> {
-    // This is the default scheme. It will automatically create as many
-    // shards as is suggested by Discord.
-    let scheme = ShardScheme::Auto;
-    debug!("Using scheme : {:?}", scheme);
-
     // Use intents to only receive guild message events.
-    let (cluster, events) = Cluster::builder(settings.bot_token.clone(), Intents::GUILD_MESSAGES)
-        .shard_scheme(scheme)
+    let (shard, events) = Shard::builder(settings.bot_token.clone(), Intents::GUILD_MESSAGES)
         .event_types(
             EventTypeFlags::MESSAGE_CREATE
                 | EventTypeFlags::MESSAGE_DELETE
                 | EventTypeFlags::MESSAGE_DELETE_BULK
                 | EventTypeFlags::MESSAGE_UPDATE,
         )
-        .build()
-        .await?;
+        .build();
 
-    debug!("Cluster set up");
+    shard.start().await?;
 
-    // Start up the cluster.
-    let cluster_spawn = cluster;
+    debug!("Shard set up");
 
-    // Start all shards in the cluster in the background.
     tokio::spawn(async move {
-        debug!("Spawning cluster");
-        cluster_spawn.up().await;
-
         if let Err(e) = tokio::signal::ctrl_c().await {
             error!("Failed setting up CTRL+C listener: {}", e);
         }
 
-        debug!("Stopping cluster");
-        cluster_spawn.down();
+        debug!("Stopping shard");
+        shard.shutdown();
     });
 
     // Since we only care about new messages, make the cache only
@@ -67,16 +51,16 @@ async fn handle_events(
     cache: InMemoryCache,
     sender: Sender<crate::models::Event>,
 ) {
-    while let Some((shard_id, event)) = events.next().await {
-        debug!("{} | Received event : {:?}", shard_id, event);
+    while let Some(event) = events.next().await {
+        debug!("Received event : {:?}", event);
         cache.update(&event);
 
         match event {
             Event::MessageCreate(msg) => {
                 let msg = match msg.content.as_str() {
-                    "!ping" => crate::models::Event::Ping((shard_id, msg.0).into()),
-                    "!aoc" => crate::models::Event::AdventOfCode((shard_id, msg.0).into()),
-                    "!42" => crate::models::Event::FourtyTwo((shard_id, msg.0).into()),
+                    "!ping" => crate::models::Event::Ping(msg.0.into()),
+                    "!aoc" => crate::models::Event::AdventOfCode(msg.0.into()),
+                    "!42" => crate::models::Event::FourtyTwo(msg.0.into()),
                     _ => continue,
                 };
 
@@ -96,10 +80,9 @@ pub fn new_client(settings: &Discord) -> HttpClient {
     HttpClient::new(settings.bot_token.clone())
 }
 
-impl From<(u64, Message)> for crate::models::Message {
-    fn from((shard_id, m): (u64, Message)) -> Self {
+impl From<Message> for crate::models::Message {
+    fn from(m: Message) -> Self {
         Self {
-            shard_id,
             channel_id: m.channel_id.0,
             author: Some(m.author.into()),
         }
