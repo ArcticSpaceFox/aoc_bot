@@ -52,7 +52,6 @@ async fn main() -> Result<()> {
 
                 let res = events_tx
                     .send(Event::AdventOfCode(Message {
-                        shard_id: 0,
                         channel_id,
                         author: None,
                     }))
