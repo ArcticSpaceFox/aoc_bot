@@ -110,6 +110,10 @@ impl Settings {
             aoc.board_id = board_id;
         }
 
+        if let Ok(event) = env::var("AOC_EVENT") {
+            aoc.event = event.parse::<u16>().context("Failed to parse AOC event year")?;
+        }
+
         if let Ok(session_cookie) = env::var("AOC_SESSION_COOKIE") {
             aoc.session_cookie = session_cookie;
         }

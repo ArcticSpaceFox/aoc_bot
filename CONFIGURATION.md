@@ -36,7 +36,7 @@ file.
 
 [AoC page]: https://adventofcode.com/2020/leaderboard/private
 
-### `session_cookie`
+#### `session_cookie`
 
 The session cookie is the login cookie of a user that the AoC website uses to for its authentication
 on all pages. To extract it, log in on the website and open the **storage inspector** of your
@@ -49,6 +49,21 @@ double click on the cell in for the `session` entry labelled **Value** and lastl
 
 This entry can be set with the `AOC_SESSION_COOKIE` environment variable as alternative to the
 config file.
+
+#### `event`
+
+This setting is to use the wanted aoc year, the API currently accepts the value `2021`. As of now 
+previous years will return an error. Be aware of this! 
+
+One way to configure it is by setting the corresponding environment variable `AOC_EVENT`, the value
+should be number! Another way is in the `config/auth.toml` in the `[aoc]` section.
+
+```yaml
+[aoc]
+board_id = "..."
+session_cookie = "..."
+event= 2021
+```
 
 ### `discord` - Discord
 
