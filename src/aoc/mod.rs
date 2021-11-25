@@ -45,7 +45,7 @@ pub struct Challenge {
 /// not request this data more often than every 15 minutes.
 pub async fn get_private_leaderboard_stats(
     session_cookie: &str,
-    event: u16,
+    event: &u16,
     leaderboard_id: &str,
 ) -> Result<LeaderboardStats> {
     let url = format!(

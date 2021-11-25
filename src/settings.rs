@@ -56,6 +56,8 @@ pub struct AdventOfCode {
     /// A session cookie to authenticate against the API. This is usually manually extracted with
     /// browser dev tools after logging into the website.
     pub session_cookie: String,
+    /// The current event that is being tracked.
+    pub event: u16,
 }
 
 /// Configuration for the Discord API.
