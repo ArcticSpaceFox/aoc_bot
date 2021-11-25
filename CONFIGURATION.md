@@ -91,6 +91,11 @@ file.
 
 [Discord Developer Portal]: https://discord.com/developers/applications
 
+#### `post_interval`
+
+Cron-job-like setting to post the current stats every x amount of time automatically. To configure
+go to the `config/auth.toml` and adjust the `discord.interval`. Needs to be a valid cron string.
+
 ## Logging
 
 The bot logs several messages while it is running that can help to understand its current state and

@@ -30,7 +30,6 @@ All the above commands assume your auth configuration is set as env vars in a `.
 
 ## What still needs to be implemented what can be improved?
 
-- [ ] a cronjob like update mode
 - [ ] a top 3 staircase
 - [ ] stats for single participant
 - [ ] better visualization
