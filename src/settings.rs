@@ -1,6 +1,7 @@
 //! Authentication and logging settings for the bot.
 
 use std::env;
+use std::num::NonZeroU64;
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
@@ -72,7 +73,7 @@ pub struct Discord {
 #[derive(Deserialize)]
 pub struct Schedule {
     pub interval: u64,
-    pub channel_id: u64,
+    pub channel_id: NonZeroU64,
 }
 
 /// A wrapper for the [LevelFilter] that allows to use it in [serde], as it doesn't provide support
@@ -111,7 +112,9 @@ impl Settings {
         }
 
         if let Ok(event) = env::var("AOC_EVENT") {
-            aoc.event = event.parse::<u16>().context("Failed to parse AOC event year")?;
+            aoc.event = event
+                .parse::<u16>()
+                .context("Failed to parse AOC event year")?;
         }
 
         if let Ok(session_cookie) = env::var("AOC_SESSION_COOKIE") {
