@@ -125,6 +125,23 @@ impl Settings {
             discord.bot_token = bot_token;
         }
 
+        if let (Ok(interval), Ok(channel_id)) = (
+            env::var("DISCORD_SCHEDULE_INTERVAL"),
+            env::var("DISCORD_SCHEDULE_CHANNEL_ID"),
+        ) {
+            let interval = interval
+                .parse()
+                .context("Failed to parse Discord schedule interval")?;
+            let channel_id = channel_id
+                .parse()
+                .context("Failed to parse Discord schedule channel ID")?;
+
+            discord.schedule = Some(Schedule {
+                interval,
+                channel_id,
+            });
+        }
+
         Ok(Self {
             logging: logger,
             aoc,
