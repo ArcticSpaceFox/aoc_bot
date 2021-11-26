@@ -101,36 +101,92 @@ impl Settings {
     /// `config/log.toml` and `config/auth.toml` files. All auth related settings are overwritten
     /// by env vars if they exist.
     pub async fn new() -> Result<Self> {
-        let logger = load_toml("config/log.toml").await?;
+        let mut logging = load_toml::<Logging>("config/log.toml").await?;
         let Auth {
             mut aoc,
             mut discord,
         } = load_toml("config/auth.toml").await?;
 
-        if let Ok(board_id) = env::var("AOC_BOARD_ID") {
-            aoc.board_id = board_id;
-        }
-
-        if let Ok(event) = env::var("AOC_EVENT") {
-            aoc.event = event
-                .parse::<u16>()
-                .context("Failed to parse AOC event year")?;
-        }
-
-        if let Ok(session_cookie) = env::var("AOC_SESSION_COOKIE") {
-            aoc.session_cookie = session_cookie;
-        }
-
-        if let Ok(bot_token) = env::var("DISCORD_BOT_TOKEN") {
-            discord.bot_token = bot_token;
-        }
+        load_logging_envs(&mut logging)?;
+        load_aoc_envs(&mut aoc)?;
+        load_discord_envs(&mut discord)?;
 
         Ok(Self {
-            logging: logger,
+            logging,
             aoc,
             discord,
         })
     }
+}
+
+/// Overwrite logging settings with any provided env vars.
+fn load_logging_envs(logging: &mut Logging) -> Result<()> {
+    if let Ok(filter) = env::var("LOG_TERMINAL_FILTER") {
+        let filter = filter
+            .parse()
+            .context("Failed to parse terminal logging filter")?;
+
+        logging.terminal = Some(BaseLogger { filter });
+    }
+
+    if let (Ok(filter), Ok(path)) = (env::var("LOG_FILE_FILTER"), env::var("LOG_FILE_PATH")) {
+        let filter = filter
+            .parse()
+            .context("Failed to parse file logging filter")?;
+        let path = PathBuf::from(path);
+
+        logging.file = Some(FileLogger {
+            base: BaseLogger { filter },
+            path,
+        });
+    }
+
+    Ok(())
+}
+
+/// Overwrite Advent of Code settings with any provided env vars.
+fn load_aoc_envs(aoc: &mut AdventOfCode) -> Result<()> {
+    if let Ok(board_id) = env::var("AOC_BOARD_ID") {
+        aoc.board_id = board_id;
+    }
+
+    if let Ok(session_cookie) = env::var("AOC_SESSION_COOKIE") {
+        aoc.session_cookie = session_cookie;
+    }
+
+    if let Ok(event) = env::var("AOC_EVENT") {
+        aoc.event = event
+            .parse::<u16>()
+            .context("Failed to parse AOC event year")?;
+    }
+
+    Ok(())
+}
+
+/// Overwrite Discord settings with any provided env vars.
+fn load_discord_envs(discord: &mut Discord) -> Result<()> {
+    if let Ok(bot_token) = env::var("DISCORD_BOT_TOKEN") {
+        discord.bot_token = bot_token;
+    }
+
+    if let (Ok(interval), Ok(channel_id)) = (
+        env::var("DISCORD_SCHEDULE_INTERVAL"),
+        env::var("DISCORD_SCHEDULE_CHANNEL_ID"),
+    ) {
+        let interval = interval
+            .parse()
+            .context("Failed to parse Discord schedule interval")?;
+        let channel_id = channel_id
+            .parse()
+            .context("Failed to parse Discord schedule channel ID")?;
+
+        discord.schedule = Some(Schedule {
+            interval,
+            channel_id,
+        });
+    }
+
+    Ok(())
 }
 
 /// Load any deserializable structure from the given file path as TOML and provide helpful error
