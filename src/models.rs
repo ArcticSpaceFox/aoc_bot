@@ -1,3 +1,5 @@
+use std::num::NonZeroU64;
+
 #[derive(Debug)]
 pub enum Event {
     Ping(Message),
@@ -8,12 +10,12 @@ pub enum Event {
 
 #[derive(Debug)]
 pub struct Message {
-    pub channel_id: u64,
+    pub channel_id: NonZeroU64,
     pub author: Option<Author>,
 }
 
 #[derive(Debug)]
 pub struct Author {
-    pub id: u64,
+    pub id: NonZeroU64,
     pub name: String,
 }

@@ -66,11 +66,10 @@ async fn main() -> Result<()> {
 
     // HTTP is separate from the gateway, so create a new client.
     debug!("Setting up http client for twilight");
-    let http = discord::new_client(&settings.discord);
+    let http = Arc::new(discord::new_client(&settings.discord));
 
-    let board_id = Arc::new(settings.aoc.board_id.into_boxed_str());
-    let session_cookie = Arc::new(settings.aoc.session_cookie.into_boxed_str());
-    let event_year = Arc::new(Box::new(settings.aoc.event));
+    let board_id = Arc::from(settings.aoc.board_id.into_boxed_str());
+    let session_cookie = Arc::from(settings.aoc.session_cookie.into_boxed_str());
 
     // Process each event as they come in.
     while let Some(event) = events_rx.recv().await {
@@ -80,10 +79,10 @@ async fn main() -> Result<()> {
 
         let fut = handle_event(
             event,
-            http.clone(),
+            Arc::clone(&http),
             Arc::clone(&board_id),
             Arc::clone(&session_cookie),
-            Arc::clone(&event_year)
+            settings.aoc.event,
         );
 
         tokio::spawn(async {
@@ -115,10 +114,10 @@ async fn get_aoc_data(
 
 async fn handle_event(
     event: Event,
-    http: HttpClient,
-    board_id: Arc<Box<str>>,
-    session_cookie: Arc<Box<str>>,
-    event_year: Arc<Box<u16>>
+    http: Arc<HttpClient>,
+    board_id: Arc<str>,
+    session_cookie: Arc<str>,
+    event_year: u16,
 ) -> Result<()> {
     match event {
         Event::Ping(msg) => {
@@ -138,7 +137,7 @@ async fn handle_event(
                 info!("Automated request");
             }
 
-            let data = get_aoc_data(&session_cookie,  &board_id, &event_year).await?;
+            let data = get_aoc_data(&session_cookie, &board_id, &event_year).await?;
 
             debug!(
                 "Retrieved data (cached: {}) -> constructing message",
