@@ -101,7 +101,7 @@ impl Settings {
     /// `config/log.toml` and `config/auth.toml` files. All auth related settings are overwritten
     /// by env vars if they exist.
     pub async fn new() -> Result<Self> {
-        let logger = load_toml("config/log.toml").await?;
+        let mut logging = load_toml::<Logging>("config/log.toml").await?;
         let Auth {
             mut aoc,
             mut discord,
@@ -142,8 +142,28 @@ impl Settings {
             });
         }
 
+        if let Ok(filter) = env::var("LOG_TERMINAL_FILTER") {
+            let filter = filter
+                .parse()
+                .context("Failed to parse terminal logging filter")?;
+
+            logging.terminal = Some(BaseLogger { filter });
+        }
+
+        if let (Ok(filter), Ok(path)) = (env::var("LOG_FILE_FILTER"), env::var("LOG_FILE_PATH")) {
+            let filter = filter
+                .parse()
+                .context("Failed to parse file logging filter")?;
+            let path = PathBuf::from(path);
+
+            logging.file = Some(FileLogger {
+                base: BaseLogger { filter },
+                path,
+            });
+        }
+
         Ok(Self {
-            logging: logger,
+            logging,
             aoc,
             discord,
         })
