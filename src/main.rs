@@ -1,17 +1,16 @@
-use std::{fs::File, str::FromStr};
 use std::sync::Arc;
-use std::time::Duration;
+use std::{fs::File, str::FromStr};
 
 use anyhow::{Context, Result};
 use cached::proc_macro::cached;
-use chrono::{Local};
-use cron::Schedule;
+use chrono::Local;
 use chrono_humanize::Humanize;
-use log::{debug, info};
+use cron::Schedule;
+use log::{debug, error, info};
 use simplelog::{
     ColorChoice, CombinedLogger, ConfigBuilder, SharedLogger, TermLogger, TerminalMode, WriteLogger,
 };
-use tokio::sync::mpsc;
+use tokio::sync::mpsc::{self, Sender};
 use tokio::time;
 use twilight_embed_builder::{EmbedBuilder, EmbedFieldBuilder};
 use twilight_http::Client as HttpClient;
@@ -36,47 +35,22 @@ async fn main() -> Result<()> {
     let (events_tx, mut events_rx) = mpsc::channel(1);
     discord::start(&settings.discord, events_tx.clone()).await?;
 
-    if let Some(schedule) = &settings.discord.schedule {
+    if let Some(schedule) = settings.discord.schedule {
         debug!("Setting up scheduled leaderboard messages");
 
-        let interval = Schedule::from_str(&schedule.interval).context("Invalid schedule interval")?;
-        let channel_id = schedule.channel_id;
+        let interval =
+            Schedule::from_str(&schedule.interval).context("Invalid schedule interval")?;
 
         tokio::spawn(async move {
-            let mut ticker = time::interval((interval.upcoming(Local).next().unwrap()- Local::now()).to_std().unwrap());
-            debug!("Set up ticker for cron job auto schedule [Upcoming: {:?}]", interval.upcoming(Local).next());
-
-            // First tick completes immediately so we wait on the first tick here once to not
-            // directly send statistics whenever the server starts up.
-            ticker.tick().await;
-
-            // for dt in interval.upcoming(Local).take(10) {
-            //     debug!("next in : {:?} -> {:?}", dt, (interval.upcoming(Local).next().unwrap()- Local::now()).to_std().unwrap())
-            // }
-
-            loop {
-                ticker.tick().await;
-                debug!("Sending new schedule event");
-                ticker = time::interval((interval.upcoming(Local).next().unwrap()- Local::now()).to_std().unwrap());
-
-                debug!("Set up ticker for cron job auto schedule [Upcoming: {:?}]", interval.upcoming(Local).next());
-                // let res = events_tx
-                //     .send(Event::AdventOfCode(Message {
-                //         channel_id,
-                //         author: None,
-                //     }))
-                //     .await;
-
-                // if res.is_err() {
-                //     break;
-                // }
+            if let Err(e) = run_scheduler(schedule.channel_id, interval, events_tx).await {
+                error!("failed running scheduler: {:?}", e);
             }
         });
     }
 
     // HTTP is separate from the gateway, so create a new client.
     debug!("Setting up http client for twilight");
-    let http = discord::new_client(&settings.discord);
+    let http = discord::new_client(settings.discord.bot_token);
 
     let board_id = Arc::new(settings.aoc.board_id.into_boxed_str());
     let session_cookie = Arc::new(settings.aoc.session_cookie.into_boxed_str());
@@ -93,12 +67,12 @@ async fn main() -> Result<()> {
             http.clone(),
             Arc::clone(&board_id),
             Arc::clone(&session_cookie),
-            Arc::clone(&event_year)
+            Arc::clone(&event_year),
         );
 
         tokio::spawn(async {
             if let Err(e) = fut.await {
-                eprintln!("failed handling event: {}", e);
+                error!("failed handling event: {:?}", e);
             }
         });
     }
@@ -128,7 +102,7 @@ async fn handle_event(
     http: HttpClient,
     board_id: Arc<Box<str>>,
     session_cookie: Arc<Box<str>>,
-    event_year: Arc<Box<u16>>
+    event_year: Arc<Box<u16>>,
 ) -> Result<()> {
     match event {
         Event::Ping(msg) => {
@@ -148,7 +122,7 @@ async fn handle_event(
                 info!("Automated request");
             }
 
-            let data = get_aoc_data(&session_cookie,  &board_id, &event_year).await?;
+            let data = get_aoc_data(&session_cookie, &board_id, &event_year).await?;
 
             debug!(
                 "Retrieved data (cached: {}) -> constructing message",
@@ -220,6 +194,36 @@ fn latest_challenge(user: &User) -> String {
     match max {
         None => "...never".to_owned(),
         Some(ts) => ts.humanize(),
+    }
+}
+
+/// Start up a fixed scheduler that periodically sends leaderboard statistics based on the
+/// configured cron schedule.
+async fn run_scheduler(channel_id: u64, interval: Schedule, tx: Sender<Event>) -> Result<()> {
+    let mut interval = interval.upcoming(Local);
+
+    loop {
+        let next = interval.next().context("no future scheduling event")?;
+        let duration = (next - Local::now()).to_std()?;
+
+        debug!(
+            "Next scheduled dashboard message in {}",
+            humantime::format_duration(duration)
+        );
+
+        time::sleep(duration).await;
+
+        debug!("Sending new schedule event");
+        let res = tx
+            .send(Event::AdventOfCode(Message {
+                channel_id,
+                author: None,
+            }))
+            .await;
+
+        if let Err(e) = res {
+            error!("failed sending scheduled leaderboard: {:?}", e);
+        }
     }
 }
 
