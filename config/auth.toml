@@ -9,5 +9,7 @@ event= 2021
 bot_token = ""
 
 [discord.schedule]
-interval = 7200
+#          sec  min   hour   day of month   month   day of week   year 
+#          0    0     0      *             *       *             *
+interval = "0 0 0 * * * *"
 channel_id = 0

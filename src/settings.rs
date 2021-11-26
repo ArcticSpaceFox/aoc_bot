@@ -71,7 +71,7 @@ pub struct Discord {
 
 #[derive(Deserialize)]
 pub struct Schedule {
-    pub interval: u64,
+    pub interval: String,
     pub channel_id: u64,
 }
 

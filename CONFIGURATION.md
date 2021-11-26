@@ -94,7 +94,7 @@ file.
 #### `post_interval`
 
 Cron-job-like setting to post the current stats every x amount of time automatically. To configure
-go to the `config/auth.toml` and adjust the `discord.interval`. Needs to be a valid cron string.
+go to the `config/auth.toml` and adjust the `discord.schedule.interval`. Needs to be a valid cron string.
 
 ## Logging
 

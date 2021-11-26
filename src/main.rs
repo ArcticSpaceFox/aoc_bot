@@ -1,9 +1,11 @@
-use std::fs::File;
+use std::{fs::File, str::FromStr};
 use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::{Context, Result};
 use cached::proc_macro::cached;
+use chrono::{Local};
+use cron::Schedule;
 use chrono_humanize::Humanize;
 use log::{debug, info};
 use simplelog::{
@@ -37,29 +39,37 @@ async fn main() -> Result<()> {
     if let Some(schedule) = &settings.discord.schedule {
         debug!("Setting up scheduled leaderboard messages");
 
-        let interval = schedule.interval;
+        let interval = Schedule::from_str(&schedule.interval).context("Invalid schedule interval")?;
         let channel_id = schedule.channel_id;
 
         tokio::spawn(async move {
-            let mut ticker = time::interval(Duration::from_secs(interval));
+            let mut ticker = time::interval((interval.upcoming(Local).next().unwrap()- Local::now()).to_std().unwrap());
+            debug!("Set up ticker for cron job auto schedule [Upcoming: {:?}]", interval.upcoming(Local).next());
+
             // First tick completes immediately so we wait on the first tick here once to not
             // directly send statistics whenever the server starts up.
             ticker.tick().await;
 
+            // for dt in interval.upcoming(Local).take(10) {
+            //     debug!("next in : {:?} -> {:?}", dt, (interval.upcoming(Local).next().unwrap()- Local::now()).to_std().unwrap())
+            // }
+
             loop {
                 ticker.tick().await;
                 debug!("Sending new schedule event");
+                ticker = time::interval((interval.upcoming(Local).next().unwrap()- Local::now()).to_std().unwrap());
 
-                let res = events_tx
-                    .send(Event::AdventOfCode(Message {
-                        channel_id,
-                        author: None,
-                    }))
-                    .await;
+                debug!("Set up ticker for cron job auto schedule [Upcoming: {:?}]", interval.upcoming(Local).next());
+                // let res = events_tx
+                //     .send(Event::AdventOfCode(Message {
+                //         channel_id,
+                //         author: None,
+                //     }))
+                //     .await;
 
-                if res.is_err() {
-                    break;
-                }
+                // if res.is_err() {
+                //     break;
+                // }
             }
         });
     }

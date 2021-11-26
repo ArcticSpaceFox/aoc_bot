@@ -7,6 +7,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.43"
 cached = "0.26.2"
+cron = "0.9.0"
 chrono = "0.4.19"
 chrono-humanize = "0.2.1"
 cookie = "0.15.1"
