@@ -86,6 +86,7 @@ impl From<Message> for crate::models::Message {
         Self {
             channel_id: m.channel_id.0,
             author: Some(m.author.into()),
+            timestamp: Some(m.timestamp),
         }
     }
 }

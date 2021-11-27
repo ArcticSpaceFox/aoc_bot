@@ -1,5 +1,7 @@
 use std::num::NonZeroU64;
 
+use twilight_model::datetime::Timestamp;
+
 #[derive(Debug)]
 pub enum Event {
     Ping(Message),
@@ -13,6 +15,7 @@ pub enum Event {
 pub struct Message {
     pub channel_id: NonZeroU64,
     pub author: Option<Author>,
+    pub timestamp: Option<Timestamp>,
 }
 
 #[derive(Debug)]

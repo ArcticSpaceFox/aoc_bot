@@ -1,3 +1,4 @@
+use std::num::NonZeroU64;
 use std::sync::Arc;
 use std::{fs::File, str::FromStr};
 
@@ -51,10 +52,11 @@ async fn main() -> Result<()> {
     // HTTP is separate from the gateway, so create a new client.
     debug!("Setting up http client for twilight");
 
-    let http = discord::new_client(settings.discord.bot_token);
+    let http = Arc::from(discord::new_client(settings.discord.bot_token));
 
     let board_id = Arc::from(settings.aoc.board_id.into_boxed_str());
     let session_cookie = Arc::from(settings.aoc.session_cookie.into_boxed_str());
+    let event_year = Arc::from(Box::new(settings.aoc.event_year));
 
     // Process each event as they come in.
     while let Some(event) = events_rx.recv().await {
@@ -99,7 +101,7 @@ async fn get_aoc_data(
 
 async fn handle_event(
     event: Event,
-    http: HttpClient,
+    http: Arc<HttpClient>,
     board_id: Arc<Box<str>>,
     session_cookie: Arc<Box<str>>,
     event_year: Arc<Box<u16>>,
@@ -107,8 +109,13 @@ async fn handle_event(
     match event {
         Event::Ping(msg) => {
             info!("Ping message");
-            http.create_message(msg.channel_id.into())
-                .content(":ping_pong: Pong!")?
+            let r = http.create_message(msg.channel_id.into())
+                .content(":ping_pong: Pong! - Ping [000]ms")?
+                .exec()
+                .await?;
+            let resmsg = r.model().await?;
+            http.update_message(msg.channel_id.into(), resmsg.id)
+                .content(Some(format!(":ping_pong: Pong! - Ping [{:0>3}]ms",(resmsg.timestamp.as_micros() - msg.timestamp.unwrap().as_micros()) / 1000).as_str()))?
                 .exec()
                 .await?;
         }
@@ -174,7 +181,6 @@ async fn handle_event(
 
             let data = get_aoc_data(&session_cookie, &board_id, &event_year).await?;
             let mut uvec = data.members.values().collect::<Vec<_>>();
-            uvec = vec![];
 
             if uvec.len() < 3 {
                 http.create_message(msg.channel_id.into())
@@ -257,7 +263,7 @@ fn latest_challenge(user: &User) -> String {
 
 /// Start up a fixed scheduler that periodically sends leaderboard statistics based on the
 /// configured cron schedule.
-async fn run_scheduler(channel_id: u64, interval: Schedule, tx: Sender<Event>) -> Result<()> {
+async fn run_scheduler(channel_id: NonZeroU64, interval: Schedule, tx: Sender<Event>) -> Result<()> {
     let mut interval = interval.upcoming(Local);
 
     loop {
@@ -276,6 +282,7 @@ async fn run_scheduler(channel_id: u64, interval: Schedule, tx: Sender<Event>) -
             .send(Event::AdventOfCode(Message {
                 channel_id,
                 author: None,
+                timestamp: None,
             }))
             .await;
 

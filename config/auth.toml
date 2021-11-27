@@ -3,7 +3,7 @@
 [aoc]
 board_id = ""
 session_cookie = ""
-event = 2021
+event_year = 2021
 
 [discord]
 bot_token = ""
@@ -12,5 +12,5 @@ bot_token = ""
 #          sec  min   hour   day of month   month   day of week   year
 #          0    0     0      *             *       *             *
 interval = "0 0 0 * * * *"
-channel_id = 0
+channel_id = 1
 

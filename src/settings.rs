@@ -58,7 +58,7 @@ pub struct AdventOfCode {
     /// browser dev tools after logging into the website.
     pub session_cookie: String,
     /// The current event that is being tracked.
-    pub event: u16,
+    pub event_year: u16,
 }
 
 /// Configuration for the Discord API.
@@ -73,7 +73,7 @@ pub struct Discord {
 #[derive(Deserialize)]
 pub struct Schedule {
     pub interval: String,
-    pub channel_id: u64,
+    pub channel_id: NonZeroU64,
 }
 
 /// A wrapper for the [LevelFilter] that allows to use it in [serde], as it doesn't provide support
@@ -154,8 +154,8 @@ fn load_aoc_envs(aoc: &mut AdventOfCode) -> Result<()> {
         aoc.session_cookie = session_cookie;
     }
 
-    if let Ok(event) = env::var("AOC_EVENT") {
-        aoc.event = event
+    if let Ok(event_year) = env::var("AOC_EVENT") {
+        aoc.event_year = event_year
             .parse::<u16>()
             .context("Failed to parse AOC event year")?;
     }
