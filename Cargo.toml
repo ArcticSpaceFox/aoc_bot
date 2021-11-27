@@ -5,7 +5,7 @@ authors = ["Sm03leBr00t <Sm03leBr00t@protonmail.com>"]
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.43"
+anyhow = "1.0.48"
 cached = "0.26.2"
 chrono = "0.4.19"
 chrono-humanize = "0.2.1"
@@ -15,13 +15,13 @@ dotenv = "0.15.0"
 futures-util = "0.3.16"
 humantime = "2.1.0"
 log = "0.4.14"
-reqwest = { version = "0.11.4", default-features = false, features = ["json", "rustls-tls"] }
-serde = { version = "1.0.129", features = ["derive"] }
-simplelog = "0.10.0"
-tokio = { version = "1.10.1", features = ["fs", "macros", "signal"] }
+reqwest = { version = "0.11.6", default-features = false, features = ["json", "rustls-tls"] }
+serde = { version = "1.0.130", features = ["derive"] }
+simplelog = "0.11.0"
+tokio = { version = "1.14.0", features = ["fs", "macros", "rt-multi-thread", "signal"] }
 toml = "0.5.8"
-twilight-cache-inmemory = "0.6.0"
-twilight-embed-builder = "0.6.0"
-twilight-gateway = "0.6.1"
-twilight-http = "0.6.2"
-twilight-model = "0.6.1"
+twilight-cache-inmemory = "0.7.2"
+twilight-embed-builder = "0.7.1"
+twilight-gateway = "0.7.1"
+twilight-http = "0.7.2"
+twilight-model = "0.7.2"

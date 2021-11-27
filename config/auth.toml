@@ -3,7 +3,7 @@
 [aoc]
 board_id = ""
 session_cookie = ""
-event= 2021
+event = 2021
 
 [discord]
 bot_token = ""
@@ -13,3 +13,4 @@ bot_token = ""
 #          0    0     0      *             *       *             *
 interval = "0 0 0 * * * *"
 channel_id = 0
+

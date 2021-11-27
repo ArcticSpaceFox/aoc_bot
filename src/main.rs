@@ -50,11 +50,11 @@ async fn main() -> Result<()> {
 
     // HTTP is separate from the gateway, so create a new client.
     debug!("Setting up http client for twilight");
+
     let http = discord::new_client(settings.discord.bot_token);
 
-    let board_id = Arc::new(settings.aoc.board_id.into_boxed_str());
-    let session_cookie = Arc::new(settings.aoc.session_cookie.into_boxed_str());
-    let event_year = Arc::new(Box::new(settings.aoc.event));
+    let board_id = Arc::from(settings.aoc.board_id.into_boxed_str());
+    let session_cookie = Arc::from(settings.aoc.session_cookie.into_boxed_str());
 
     // Process each event as they come in.
     while let Some(event) = events_rx.recv().await {
@@ -64,7 +64,7 @@ async fn main() -> Result<()> {
 
         let fut = handle_event(
             event,
-            http.clone(),
+            Arc::clone(&http),
             Arc::clone(&board_id),
             Arc::clone(&session_cookie),
             Arc::clone(&event_year),
@@ -166,6 +166,64 @@ async fn handle_event(
                     The Answer to the Ultimate Question of Life, \
                     the Universe, and Everything is 42",
                 )?
+                .exec()
+                .await?;
+        }
+        Event::TopThree(msg) => {
+            info!("getting top 3");
+
+            let data = get_aoc_data(&session_cookie, &board_id, &event_year).await?;
+            let mut uvec = data.members.values().collect::<Vec<_>>();
+            uvec = vec![];
+
+            if uvec.len() < 3 {
+                http.create_message(msg.channel_id.into())
+                    .content(":exclamation: Sorry, but there are not 3 people on your leaderboard, and you do not fill these 3 steps alone")?
+                    .exec()
+                    .await?;
+                return Ok(());
+            }
+
+            uvec.sort_by_key(|m| m.local_score);
+
+            debug!(
+                "Retrieved data (cached: {}) -> constructing message",
+                data.was_cached
+            );
+
+            let text = format!(
+                "```\n
+                {0:^15}
+                  ↑ {1: ^3} points
+                  ★ {2: ^3} stars
+                 _____________
+                /     ___     \\
+                |    /   |    |
+                |   /_   |    |
+{3:^15} |     |  |    |    {6:^15}
+↑ {4:^3} points    |     |  |    |    ↑ {7:^3} points
+★ {5:^3} stars     |     |__|    |    ★ {8:^3} stars
+   _____________|             |_____________
+  /    _____                       _____    \\
+  |   |__   |                     |__   |   |
+  |    __|  |                      __|  |   |
+  |   |   __|                     |__   |   |
+  |   |  |__                       __|  |   |
+  |   |_____|                     |_____|   |
+  \\_________________________________________/ ```",
+                uvec[0].name,
+                uvec[0].local_score,
+                uvec[0].stars,
+                uvec[1].name,
+                uvec[1].local_score,
+                uvec[1].stars,
+                uvec[2].name,
+                uvec[2].local_score,
+                uvec[2].stars
+            );
+
+            http.create_message(msg.channel_id.into())
+                .content(&text)?
                 .exec()
                 .await?;
         }
