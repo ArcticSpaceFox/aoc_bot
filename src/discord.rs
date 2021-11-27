@@ -61,6 +61,7 @@ async fn handle_events(
                     "!ping" => crate::models::Event::Ping(msg.0.into()),
                     "!aoc" => crate::models::Event::AdventOfCode(msg.0.into()),
                     "!42" => crate::models::Event::FourtyTwo(msg.0.into()),
+                    "!top3" => crate::models::Event::TopThree(msg.0.into()),
                     _ => continue,
                 };
 
