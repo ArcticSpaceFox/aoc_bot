@@ -184,6 +184,64 @@ async fn handle_event(
                 .exec()
                 .await?;
         }
+        Event::TopThree(msg) => {
+            info!("getting top 3");
+
+            let data = get_aoc_data(&session_cookie, &board_id, &event_year).await?;
+            let mut uvec = data.members.values().collect::<Vec<_>>();
+            uvec = vec![];
+
+            if uvec.len() < 3 {
+                http.create_message(msg.channel_id.into())
+                    .content(":exclamation: Sorry, but there are not 3 people on your leaderboard, and you do not fill these 3 steps alone")?
+                    .exec()
+                    .await?;
+                return Ok(());
+            }
+
+            uvec.sort_by_key(|m| m.local_score);
+
+            debug!(
+                "Retrieved data (cached: {}) -> constructing message",
+                data.was_cached
+            );
+
+            let text = format!(
+                "```\n
+                {0:^15}
+                  ↑ {1: ^3} points
+                  ★ {2: ^3} stars
+                 _____________
+                /     ___     \\
+                |    /   |    |
+                |   /_   |    |
+{3:^15} |     |  |    |    {6:^15}
+↑ {4:^3} points    |     |  |    |    ↑ {7:^3} points
+★ {5:^3} stars     |     |__|    |    ★ {8:^3} stars
+   _____________|             |_____________
+  /    _____                       _____    \\
+  |   |__   |                     |__   |   |
+  |    __|  |                      __|  |   |
+  |   |   __|                     |__   |   |
+  |   |  |__                       __|  |   |
+  |   |_____|                     |_____|   |
+  \\_________________________________________/ ```",
+                uvec[0].name,
+                uvec[0].local_score,
+                uvec[0].stars,
+                uvec[1].name,
+                uvec[1].local_score,
+                uvec[1].stars,
+                uvec[2].name,
+                uvec[2].local_score,
+                uvec[2].stars
+            );
+
+            http.create_message(msg.channel_id.into())
+                .content(&text)?
+                .exec()
+                .await?;
+        }
         _ => {}
     }
 

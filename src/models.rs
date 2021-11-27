@@ -5,6 +5,7 @@ pub enum Event {
     Ping(Message),
     AdventOfCode(Message),
     FourtyTwo(Message),
+    TopThree(Message),
     Shutdown,
 }
 
