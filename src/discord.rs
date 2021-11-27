@@ -77,8 +77,8 @@ async fn handle_events(
     sender.send(crate::models::Event::Shutdown).await.ok();
 }
 
-pub fn new_client(settings: &Discord) -> HttpClient {
-    HttpClient::new(settings.bot_token.clone())
+pub fn new_client(token: String) -> HttpClient {
+    HttpClient::new(token)
 }
 
 impl From<Message> for crate::models::Message {

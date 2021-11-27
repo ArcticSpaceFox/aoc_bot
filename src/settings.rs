@@ -72,8 +72,8 @@ pub struct Discord {
 
 #[derive(Deserialize)]
 pub struct Schedule {
-    pub interval: u64,
-    pub channel_id: NonZeroU64,
+    pub interval: String,
+    pub channel_id: u64,
 }
 
 /// A wrapper for the [LevelFilter] that allows to use it in [serde], as it doesn't provide support

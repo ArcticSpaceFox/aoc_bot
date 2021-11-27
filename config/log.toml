@@ -1,7 +1,7 @@
 # To disable any logger, comment out or remove its whole section.
 [terminal]
-filter = "warn"
+filter = "debug"
 
 [file]
-filter = "info"
+filter = "debug"
 path = "aocbot.log"

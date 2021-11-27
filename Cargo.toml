@@ -10,8 +10,10 @@ cached = "0.26.2"
 chrono = "0.4.19"
 chrono-humanize = "0.2.1"
 cookie = "0.15.1"
+cron = "0.9.0"
 dotenv = "0.15.0"
-futures-util = "0.3.18"
+futures-util = "0.3.16"
+humantime = "2.1.0"
 log = "0.4.14"
 reqwest = { version = "0.11.6", default-features = false, features = ["json", "rustls-tls"] }
 serde = { version = "1.0.130", features = ["derive"] }
