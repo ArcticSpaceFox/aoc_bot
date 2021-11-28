@@ -2,7 +2,7 @@ name: Docs
 on:
   push:
     branches: [master]
-    # paths: ["docs/**"]
+    paths: ["docs/**"]
 jobs:
   docs:
     name: Docs
