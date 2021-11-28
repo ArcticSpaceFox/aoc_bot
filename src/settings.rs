@@ -154,7 +154,7 @@ fn load_aoc_envs(aoc: &mut AdventOfCode) -> Result<()> {
         aoc.session_cookie = session_cookie;
     }
 
-    if let Ok(event_year) = env::var("AOC_EVENT") {
+    if let Ok(event_year) = env::var("AOC_EVENT_YEAR") {
         aoc.event_year = event_year
             .parse::<u16>()
             .context("Failed to parse AOC event year")?;
