@@ -34,7 +34,7 @@ jobs:
       - name: Build docs
         run: |
           cd docs/
-          mdbook Build
+          mdbook build
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
