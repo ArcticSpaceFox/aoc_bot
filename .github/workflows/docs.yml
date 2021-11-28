@@ -27,7 +27,7 @@ jobs:
           VERSION=0.7.6
           curl -Lo /tmp/mdbook-linkcheck.zip https://github.com/Michael-F-Bryan/mdbook-linkcheck/releases/download/v${VERSION}/mdbook-linkcheck.x86_64-unknown-linux-gnu.zip
           sudo unzip /tmp/mdbook-linkcheck.zip mdbook-linkcheck -d /usr/local/bin
-          chmod +x /usr/local/bin/mdbook-linkcheck
+          sudo chmod +x /usr/local/bin/mdbook-linkcheck
           rm /tmp/mdbook-linkcheck.zip
       - name: Clean docs folder
         run: rm -rf /docs/book
