@@ -1,7 +1,7 @@
 [package]
 name = "aoc_bot"
 version = "0.1.0"
-authors = ["Sm03leBr00t <Sm03leBr00t@protonmail.com>"]
+authors = ["ArcticSpaceFox <contact@spacefoxlabs.com>"]
 edition = "2021"
 
 [dependencies]

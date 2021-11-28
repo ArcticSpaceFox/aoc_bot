@@ -1,0 +1,17 @@
+[book]
+authors = ["ArcticSpaceFox", "Dominik Nakamura"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Advent of Code Discord Bot"
+
+[rust]
+edition = "2021"
+
+[output.html]
+git-repository-url = "https://github.com/ArcticSpaceFox/aoc_bot"
+edit-url-template = "https://github.com/ArcticSpaceFox/aoc_bot/edit/master/docs/{path}"
+site-url = "/aoc_bot/"
+
+[output.linkcheck]
+follow-web-links = true

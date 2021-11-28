@@ -1,0 +1,43 @@
+name: Docs
+on:
+  push:
+    branches: [master]
+    paths: ["docs/**"]
+jobs:
+  docs:
+    name: Docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - name: Install mdbook
+        run: |
+          VERSION=0.4.14
+          curl -Lo /tmp/mdbook.tar.gz https://github.com/rust-lang/mdBook/releases/download/v${VERSION}/mdbook-v${VERSION}-x86_64-unknown-linux-gnu.tar.gz
+          sudo tar -xzf /tmp/mdbook.tar.gz -C /usr/local/bin
+          rm /tmp/mdbook.tar.gz
+      - name: Install mdbook-linkcheck
+        run: |
+          VERSION=0.7.6
+          curl -Lo /tmp/mdbook-linkcheck.zip https://github.com/Michael-F-Bryan/mdbook-linkcheck/releases/download/v${VERSION}/mdbook-linkcheck.x86_64-unknown-linux-gnu.zip
+          sudo unzip /tmp/mdbook-linkcheck.zip mdbook-linkcheck -d /usr/local/bin
+          chmod +x /usr/local/bin/mdbook-linkcheck
+          rm /tmp/mdbook-linkcheck.zip
+      - name: Clean docs folder
+        run: rm -rf /docs/book
+      - name: Build docs
+        run: |
+          cd docs/
+          mdbook Build
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs/book
+          force_orphan: true

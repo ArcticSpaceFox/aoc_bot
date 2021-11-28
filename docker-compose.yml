@@ -5,4 +5,5 @@ services:
     build: .
     env_file: .env
     volumes:
-      - "./config/auth.toml:/data/config/auth.toml"
+      - "./config/auth.toml:/data/config/auth.toml:ro"
+      - "./config/log.toml:/data/config/log.toml:ro"
