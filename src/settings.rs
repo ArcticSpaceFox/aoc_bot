@@ -1,10 +1,11 @@
 //! Authentication and logging settings for the bot.
 
 use std::env;
+use std::io::ErrorKind;
 use std::num::NonZeroU64;
 use std::path::PathBuf;
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use simplelog::LevelFilter;
@@ -29,6 +30,17 @@ pub struct Logging {
     pub terminal: Option<BaseLogger>,
     /// File backend settings.
     pub file: Option<FileLogger>,
+}
+
+impl Default for Logging {
+    fn default() -> Self {
+        Self {
+            terminal: Some(BaseLogger {
+                filter: LevelFilter::Info,
+            }),
+            file: None,
+        }
+    }
 }
 
 /// The base logger describes the very basic settings that apply to each logging backend.
@@ -94,6 +106,22 @@ enum SerdeLevelFilter {
 struct Auth {
     aoc: AdventOfCode,
     discord: Discord,
+}
+
+impl Default for Auth {
+    fn default() -> Self {
+        Self {
+            aoc: AdventOfCode {
+                board_id: String::new(),
+                session_cookie: String::new(),
+                event_year: 2021,
+            },
+            discord: Discord {
+                bot_token: String::new(),
+                schedule: None,
+            },
+        }
+    }
 }
 
 impl Settings {
@@ -193,11 +221,15 @@ fn load_discord_envs(discord: &mut Discord) -> Result<()> {
 /// messages in case something goes wrong during the process.
 async fn load_toml<T>(path: &str) -> Result<T>
 where
-    T: DeserializeOwned,
+    T: Default + DeserializeOwned,
 {
-    let content = fs::read(path)
-        .await
-        .with_context(|| format!("failed loading config file at '{}'", path))?;
+    let content = match fs::read(path).await {
+        Ok(content) => content,
+        Err(e) if e.kind() == ErrorKind::NotFound => return Ok(T::default()),
+        Err(e) => {
+            return Err(anyhow!(e)).context(format!("failed loading config file at '{}'", path))
+        }
+    };
 
     toml::from_slice(&content)
         .with_context(|| format!("failed to parse TOML config from '{}'", path))

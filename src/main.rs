@@ -28,13 +28,15 @@ async fn main() -> Result<()> {
     // Loading .env file
     dotenv::dotenv().ok();
     // Load settings file
-    let settings = Settings::new().await?;
+    let settings = Settings::new().await.context("failed loading settings")?;
 
-    setup_logger(&settings.logging)?;
+    setup_logger(&settings.logging).context("failed setting up logger")?;
 
     info!("Starting ...");
     let (events_tx, mut events_rx) = mpsc::channel(1);
-    discord::start(&settings.discord, events_tx.clone()).await?;
+    discord::start(&settings.discord, events_tx.clone())
+        .await
+        .context("failed starting Discord listener")?;
 
     if let Some(schedule) = settings.discord.schedule {
         debug!("Setting up scheduled leaderboard messages");
