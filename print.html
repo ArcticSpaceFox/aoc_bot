@@ -1,0 +1,447 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Advent of Code Discord Bot</title>
+        <meta name="robots" content="noindex" />
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="index.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="configuration/index.html"><strong aria-hidden="true">2.</strong> Configuration</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="configuration/authentication.html"><strong aria-hidden="true">2.1.</strong> Authentication</a></li><li class="chapter-item expanded "><a href="configuration/logging.html"><strong aria-hidden="true">2.2.</strong> Logging</a></li><li class="chapter-item expanded "><a href="configuration/environment-variables.html"><strong aria-hidden="true">2.3.</strong> Environment Variables</a></li></ol></li><li class="chapter-item expanded "><a href="commands.html"><strong aria-hidden="true">3.</strong> Commands</a></li><li class="chapter-item expanded "><a href="docker.html"><strong aria-hidden="true">4.</strong> Docker</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Advent of Code Discord Bot</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/ArcticSpaceFox/aoc_bot" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
+<p>This is a simple bot you can spin up and watch your stats for the Advent of Code competition. It
+uses the JSON API for private leaderboards.</p>
+<h2 id="description"><a class="header" href="#description">Description</a></h2>
+<p>This bot is supposed to be fast, low-overhead (saves money on server hosting) and easy to use. It
+has one purpose, to help show stats for the AoC challenges in your Discord.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="configuration"><a class="header" href="#configuration">Configuration</a></h1>
+<p>This section explains the configuration options available in the <strong>auth.toml</strong> and <strong>log.toml</strong>
+files as well as environment variables as alternative source of settings.</p>
+<ul>
+<li><a href="configuration/authentication.html">Authentication</a> configuration for required login information for both Advent
+of Code as we as Discord.</li>
+<li><a href="configuration/logging.html">Logging</a> configuration for terminal and file logging.</li>
+<li><a href="configuration/environment-variables.html">Environment Variables</a> as overrides or alternative to the TOML files.</li>
+</ul>
+<h2 id="file-location"><a class="header" href="#file-location">File location</a></h2>
+<p>The bot expects both <strong>auth.toml</strong> and <strong>log.toml</strong> to be located in a <code>config</code> folder in the
+current working directory. For example, let's say the current directory is <code>/apps/aoc_bot</code>, the
+structure would be as follows:</p>
+<pre><code class="language-txt">apps/
+    aoc_bot/        &lt;-- current directory
+        config/
+            auth.toml  &lt;-- Authentication settings
+            log.toml   &lt;-- Logging settings
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="authentication"><a class="header" href="#authentication">Authentication</a></h1>
+<p>Authentication is needed for the Advent of Code API to get leaderboard statistics as well as the Discord API to send messages as a bot. The configuration is located in <code>config/auth.toml</code> and this
+bot will look for it in the current working directory from where it was executed.</p>
+<h2 id="aoc---advent-of-code-related-settings"><a class="header" href="#aoc---advent-of-code-related-settings"><code>aoc</code> - Advent of Code related settings</a></h2>
+<p>This section contains all information required to fetch leaderboard statistics from the Advent of
+Code website.</p>
+<h3 id="board_id"><a class="header" href="#board_id"><code>board_id</code></a></h3>
+<p>This is the board ID from the private leaderboard the bot should fetch information from. This can
+be found by opening a leaderboard from the <a href="https://adventofcode.com/2020/leaderboard/private">AoC page</a>. Once opened the ID is the digits at the end
+of the URL.</p>
+<p>For example, if we would want the ID from the following leaderboard URL, the ID would be <code>12345</code>:</p>
+<pre><code class="language-txt">https://adventofcode.com/2020/leaderboard/private/view/12345
+                                                       └─┬─┘
+                                                   leaderboard ID
+</code></pre>
+<h3 id="session_cookie"><a class="header" href="#session_cookie"><code>session_cookie</code></a></h3>
+<p>The session cookie is the login cookie of a user that the AoC website uses to for its authentication
+on all pages. To extract it, log in on the website and open the <strong>storage inspector</strong> of your
+browser, locate the cookies area and look for an entry named <code>session</code>.</p>
+<p>For example in Firefox this can be done by first opening <em>Hamburger menu -&gt; Web Developer -&gt;
+Storage Inspector</em>. Then expand the cookies entry, click on the single entry within it and
+double click on the cell in for the <code>session</code> entry labelled <strong>Value</strong> and lastly to copy it
+(<em>CTRL+C</em>).</p>
+<h3 id="event_year"><a class="header" href="#event_year"><code>event_year</code></a></h3>
+<p>This setting is to use the wanted AoC year, the API currently accepts the values <code>2015</code>, <code>2016</code>,
+<code>2017</code>, <code>2018</code>, <code>2019</code>, <code>2020</code> and <code>2021</code>. That is, every year from the first AoC event until today.</p>
+<h2 id="discord---discord-related-settings"><a class="header" href="#discord---discord-related-settings"><code>discord</code> - Discord related settings</a></h2>
+<p>This section contains all authentication details needed to send send messages as a bot in Discord
+through the service's API.</p>
+<h3 id="bot_token"><a class="header" href="#bot_token"><code>bot_token</code></a></h3>
+<p>The only required setting is this bot token which allows to authenticate as a bot. It can be
+retrieved from the Discord Developer Portal as follows:</p>
+<ul>
+<li>First navigate to the <a href="https://discord.com/developers/applications">Discord Developer Portal</a> and log in if you haven't yet.</li>
+<li>Create a new application or use an existing one and open it.</li>
+<li>In the navigation select the <strong>Bot</strong> area. Here you can find your <strong>bot token</strong> that you need for
+this setting.</li>
+<li>To enable the application for a Discord Server, navigate to the <strong>OAuth2</strong> section to generate a
+URL for the authorization process.
+<ul>
+<li>In <strong>Scopes</strong> select the <code>bot</code> scope.</li>
+<li>In <strong>Bot Permissions</strong> select the <code>Text Messages</code> and <code>Read Message History</code> permission.</li>
+<li>Copy the link from the <strong>Scopes</strong> section and open it in a tab.</li>
+<li>Select the server where you want to install the application.</li>
+</ul>
+</li>
+</ul>
+<h3 id="schedule"><a class="header" href="#schedule"><code>schedule</code></a></h3>
+<p>The bot allows to set a recurring automated leaderboard message without request from a user first.
+To enable it crate a sub-section <code>[discord.schedule]</code> in the <code>config/auth.toml</code> file and set both of
+the following fields.</p>
+<h4 id="interval"><a class="header" href="#interval"><code>interval</code></a></h4>
+<p>The interval describes how often the automated leaderboard should be sent, defined as a cron-job
+string. For example to send the leaderboard every 2 hours you can use <code>0 0 */2 * * * *</code> as value.</p>
+<p>This format basically defines the following time slots for each value, separated by spaces:</p>
+<pre><code class="language-txt">0 0 */2 * * * *
+│ │  │  │ │ │ │
+│ │  │  │ │ │ └─ year
+│ │  │  │ │ └─ day of week
+│ │  │  │ └─ month
+│ │  │  └─ day of month
+│ │  └─ hours
+│ └─ minutes
+└─ seconds
+</code></pre>
+<p>For further help and examples have a look at <a href="https://crontab.guru/">crontab guru</a>, although the website has a simpler
+version without the <em>seconds</em> and <em>year</em> fields.</p>
+<h4 id="channel_id"><a class="header" href="#channel_id"><code>channel_id</code></a></h4>
+<p>The channel ID is the Discord channel where the leaderboard should be posted. In contrast to a user
+sent command, where the reply is sent in the same channel as the user's command, the channel is
+fixed as there is no way of determining the channel dynamically.</p>
+<p>This ID can be found in Discord opening the context menu of a channel (right click) and selecting
+<strong>Copy ID</strong> to copy it into the clipboard.</p>
+<p>To see this option the developer mode must be enabled in the settings under
+<strong>App Settings &gt; Advanced &gt; Developer Mode</strong>.</p>
+<h2 id="examples"><a class="header" href="#examples">Examples</a></h2>
+<p>Below are some example configuration for reference. <strong>Please note</strong> that you still must replace the
+authentication related fields with real values to make the setup work.</p>
+<h3 id="basic"><a class="header" href="#basic">Basic</a></h3>
+<p>This is a sample configuration without any optional settings.</p>
+<pre><code class="language-toml">[aoc]
+board_id = &quot;12345&quot;
+session_cookie = &quot;001122aabbcc&quot;
+event_year = 2021
+
+[discord]
+bot_token = &quot;abcdef&quot;
+</code></pre>
+<h3 id="full"><a class="header" href="#full">Full</a></h3>
+<p>The following is a complete configuration file with all optional settings enabled.</p>
+<pre><code class="language-toml">[aoc]
+board_id = &quot;12345&quot;
+session_cookie = &quot;001122aabbcc&quot;
+event_year = 2021
+
+[discord]
+bot_token = &quot;abcdef&quot;
+
+[discord.schedule]
+#          sec  min   hour   day of month   month   day of week   year
+#          0    0     0      *             *       *             *
+interval = &quot;0 0 0 * * * *&quot;
+channel_id = 100
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="logging"><a class="header" href="#logging">Logging</a></h1>
+<p>The bot logs several messages while it is running that can help to understand its current state and
+aid in debugging errors. This logging section controls where this information is written to and at
+what verbosity level.</p>
+<p>In addition, logs can be written to different backend at the same time. Further details are written
+below for each supported backend.</p>
+<p>To disable any of the backends, comment out or remove the whole section of a backend.</p>
+<h2 id="filter-levels"><a class="header" href="#filter-levels">Filter levels</a></h2>
+<p>The filter defines the verbosity of error messages. For a production setup it's recommended to set
+it to <code>warn</code> for the terminal output and <code>info</code> for the file output. This default configuration can
+be found at the project's <code>config/log.toml</code>.</p>
+<p>This setting is available to all log backends and the following values are accepted, ranked from
+least to most verbose:</p>
+<ul>
+<li><code>error</code>: most silent version, only log critical errors.</li>
+<li><code>warn</code>: log critical errors and warnings.</li>
+<li><code>info</code>: log informative messages, warnings and errors.</li>
+<li><code>debug</code>: write messages helpful for debugging purposes and all above type of messages.</li>
+<li><code>trace</code>: most verbose, logs very detailed information plus all the other levels.</li>
+</ul>
+<h2 id="terminal---terminal-output"><a class="header" href="#terminal---terminal-output"><code>terminal</code> - Terminal output</a></h2>
+<p>This backend writes logs directly to the terminal where the bot is running. It has only one setting,
+the <code>filter</code>. Refer to the <a href="configuration/logging.html#filter-levels">Filter levels</a> area for possible values.</p>
+<h2 id="file---file-output"><a class="header" href="#file---file-output"><code>file</code> - File output</a></h2>
+<p>This backend writes logs to a file instead of the terminal and has two settings, the <code>filter</code> and
+the <code>path</code>. Refer to the <a href="configuration/logging.html#filter-levels">Filter levels</a> area for possible values of the <code>filter</code>
+field.</p>
+<h3 id="path"><a class="header" href="#path"><code>path</code></a></h3>
+<p>This setting defines the path of a file that the backend will append logs to. If the file is missing
+it will be automatically created.</p>
+<h2 id="examples-1"><a class="header" href="#examples-1">Examples</a></h2>
+<h3 id="terminal-only"><a class="header" href="#terminal-only">Terminal only</a></h3>
+<p>Only terminal output is enabled, with debug or worse logs, and no log file will be created.</p>
+<pre><code class="language-toml">[terminal]
+filter = &quot;debug&quot;
+</code></pre>
+<h3 id="file-only"><a class="header" href="#file-only">File only</a></h3>
+<p>The terminal output will be completely silent and debug or worse logs will be logged to the file
+<code>aocbot.log</code>.</p>
+<pre><code class="language-toml">[file]
+filter = &quot;debug&quot;
+path = &quot;aocbot.log&quot;
+</code></pre>
+<h3 id="both"><a class="header" href="#both">Both</a></h3>
+<p>A combination of the above examples, logging only warnings and errors to the terminal and more detailed logs to the <code>aocbot.log</code> file.</p>
+<pre><code class="language-toml">[terminal]
+filter = &quot;warn&quot;
+
+[file]
+filter = &quot;debug&quot;
+path = &quot;aocbot.log&quot;
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="environment-variables"><a class="header" href="#environment-variables">Environment variables</a></h1>
+<p>In addition (or as replacement) for configuration files, all possible settings can be done through
+environment variables. For details about each option, please refer to the appropriate section of the
+config files.</p>
+<h2 id="available-values"><a class="header" href="#available-values">Available values</a></h2>
+<p>The following sections list the available environment variables with links to the respective config
+file settings.</p>
+<h3 id="advent-of-code"><a class="header" href="#advent-of-code">Advent of Code</a></h3>
+<p>These are the AoC related settings from the <code>auth.toml</code> file.</p>
+<ul>
+<li><code>AOC_BOARD_ID</code>: <a href="configuration/authentication.html#board_id"><code>aoc.board_id</code></a></li>
+<li><code>AOC_SESSION_COOKIE</code>: <a href="configuration/authentication.html#session_cookie"><code>aoc.session_cookie</code></a></li>
+<li><code>AOC_EVENT_YEAR</code>: <a href="configuration/authentication.html#event_year"><code>aoc.event_year</code></a></li>
+</ul>
+<h3 id="discord"><a class="header" href="#discord">Discord</a></h3>
+<p>These are the Discord related settings from the <code>auth.toml</code> file.</p>
+<ul>
+<li><code>DISCORD_BOT_TOKEN</code>: <a href="configuration/authentication.html#bot_token"><code>discord.bot_token</code></a></li>
+<li><code>DISCORD_SCHEDULE_INTERVAL</code>: <a href="configuration/authentication.html#interval"><code>discord.schedule.interval</code></a></li>
+<li><code>DISCORD_SCHEDULE_CHANNEL_ID</code>: <a href="configuration/authentication.html#channel_id"><code>discord.schedule.channel_id</code></a></li>
+</ul>
+<p><strong>Please note</strong>: <code>DISCORD_SCHEDULE_INTERVAL</code> and <code>DISCORD_SCHEDULE_CHANNEL_ID</code> must both be set
+together. Setting only one won't have any effect.</p>
+<h3 id="logging-1"><a class="header" href="#logging-1">Logging</a></h3>
+<p>These are the logging related settings from the <code>log.toml</code> file.</p>
+<ul>
+<li><code>LOG_TERMINAL_FILTER</code>: <a href="configuration/logging.html#terminal---terminal-output"><code>terminal.filter</code></a></li>
+<li><code>LOG_FILE_FILTER</code>: <a href="configuration/logging.html#file---file-output"><code>file.filter</code></a></li>
+<li><code>LOG_FILE_PATH</code>: <a href="configuration/logging.html#path"><code>file.path</code></a></li>
+</ul>
+<p><strong>Please note</strong>: <code>LOG_FILE_FILTER</code> and <code>LOG_FILE_PATH</code> must both be set together. Setting only one
+won't have any effect.</p>
+<h2 id="using-an-env-file"><a class="header" href="#using-an-env-file">Using an <code>.env</code> file</a></h2>
+<p>The application allows to set environment variables through a file call <code>.env</code>. This is a common
+approach that allows to configure applications through env vars without having to define them every
+time before execution.</p>
+<p>Contents of the file are pairs of env var names and values, separated by an equal sign <code>=</code> and each
+entry separated by newlines <code>\n</code>. Comments can be added by prefixing values with a <code>#</code>. For example:</p>
+<pre><code class="language-sh"># .env file contents
+AOC_BOARD_ID=12345
+AOC_SESSION_COOKIE=00112233aabbccdd
+</code></pre>
+<p>environment variables are automatically loaded from this file if it can be found in the current
+working directory. Any already defined env var will not be overriden by this file.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="commands"><a class="header" href="#commands">Commands</a></h1>
+<p>The main feature of this bot is the <a href="commands.html#aoc"><code>!aoc</code></a> command, but it supports some other commands as
+well. Some of them are related to AoC and some are just for fun or testing purposes.</p>
+<h2 id="ping"><a class="header" href="#ping"><code>!ping</code></a></h2>
+<p>The ping command allows to check how long the bot needs to interact with the Discord APIs. After
+receiving the user's command the bot will respond with a simple message initially and then update
+it immediately afterwards to measure the time it takes between sending 2 commands to Discord.</p>
+<h2 id="aoc"><a class="header" href="#aoc"><code>!aoc</code></a></h2>
+<p>The main command, giving a large overview of the current members in the configured leaderboard. It
+renders a list of all members, sorted by their star count together with several statistics.</p>
+<h2 id="top3"><a class="header" href="#top3"><code>!top3</code></a></h2>
+<p>This command renders a top 3 stair case with the first 3 members that have the highest star count.
+Currently the stair case is rendered as ASCII art.</p>
+<h2 id="42"><a class="header" href="#42"><code>!42</code></a></h2>
+<p>A fun command, for people who read or watched the <strong>The Hitchhiker's Guide to the Galaxy</strong>
+book/movie.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="docker"><a class="header" href="#docker">Docker</a></h1>
+<p>The easiest way to deploy this bot is through Docker. It allows to run it independent of the
+software installed on the system as Docker isolates its <em>containers</em> from the host. This project
+comes with a <code>Dockerfile</code> so you only need to build it and are good to go.</p>
+<h2 id="building"><a class="header" href="#building">Building</a></h2>
+<p>Creating the image is straight forward and the same as for any typical Dockerfile. Just navigate to
+the root of the project and run the following command to build the image:</p>
+<pre><code class="language-sh">docker build -t aoc_bot .
+</code></pre>
+<p>This will create the image, tagged with the name <code>aoc_bot</code>. You can choose any name you like.</p>
+<h2 id="running"><a class="header" href="#running">Running</a></h2>
+<p>The built image can be run either directly through Docker, Docker Compose or by other systems that
+integrate with Docker (for example Terraform, Ansible, Kubernetes, ...).</p>
+<p>For example ,the following command runs the bot, assuming all settings are configured through the
+<a href="configuration/authentication.html">authentication</a> and <a href="configuration/logging.html">logging</a> files.</p>
+<pre><code class="language-sh">docker run --rm -it \
+  -v $PWD/config/auth.toml:/data/config/auth.toml:ro \
+  -v $PWD/config/log.toml:/data/config/log.toml:ro \
+  aoc_bot
+</code></pre>
+<p>The following version is an alternative using an <code>.env</code> file to configure the bot as described in
+the <a href="configuration/environment-variables.html##using-an-env-file">environment variables</a> section.</p>
+<pre><code class="language-sh">docker run --rm -it --env-file .env aoc_bot
+</code></pre>
+<h2 id="docker-compose"><a class="header" href="#docker-compose">Docker compose</a></h2>
+<p>The project comes with a basic Docker Compose configuration that can be used to run this bot through
+Docker. It is an equivalent to the above commands but allows easier execution without having to
+remember all necessary command line options.</p>
+<pre><code class="language-sh">docker-compose up --build
+</code></pre>
+<p>It will build the image if it isn't available in the local storage and then execute the bot.
+Settings are loaded by mounting the config files as well as using the env var file to load
+environment files for configuration.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript">
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+    </body>
+</html>
