@@ -110,14 +110,14 @@ async fn handle_event(
             info!("Ping message");
             let r = http
                 .create_message(msg.channel_id.into())
-                .content(":ping_pong: Pong! - Ping [000]ms")?
+                .content(":ping_pong: Pong! - Latency [000]ms")?
                 .exec()
                 .await?;
             let resmsg = r.model().await?;
             http.update_message(msg.channel_id.into(), resmsg.id)
                 .content(Some(
                     format!(
-                        ":ping_pong: Pong! - Ping [{:0>3}]ms",
+                        ":ping_pong: Pong! - Latency [{:0>3}]ms",
                         (resmsg.timestamp.as_micros() - msg.timestamp.unwrap().as_micros()) / 1000
                     )
                     .as_str(),
