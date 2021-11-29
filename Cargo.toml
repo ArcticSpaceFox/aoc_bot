@@ -6,6 +6,7 @@ authors = [
     "Dominik Nakamura <dnaka91@gmail.com>",
 ]
 edition = "2021"
+license = "AGPL-3.0-only"
 
 [dependencies]
 anyhow = "1.0.49"
