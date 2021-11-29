@@ -4,7 +4,6 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 use chrono::prelude::*;
-use cookie::Cookie;
 use reqwest::header;
 use serde::Deserialize;
 
@@ -52,9 +51,7 @@ pub async fn get_private_leaderboard_stats(
         "https://adventofcode.com/{}/leaderboard/private/view/{}.json",
         event, leaderboard_id
     );
-    let cookie = Cookie::build("session", session_cookie)
-        .finish()
-        .to_string();
+    let cookie = format!("session={}", session_cookie);
 
     let response = reqwest::Client::new()
         .get(&url)
