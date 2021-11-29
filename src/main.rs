@@ -14,10 +14,10 @@ use simplelog::{
 use tokio::sync::mpsc::{self, Sender};
 use tokio::time;
 use twilight_embed_builder::{EmbedBuilder, EmbedFieldBuilder};
-use twilight_http::Client as HttpClient;
+use twilight_http::Client as DiscordClient;
 
 use aoc_bot::{
-    aoc::{self, LeaderboardStats, User},
+    aoc::{Client as AocClient, LeaderboardStats, User},
     discord,
     models::{Event, Message},
     settings::{Logging, Settings},
@@ -54,10 +54,10 @@ async fn main() -> Result<()> {
     // HTTP is separate from the gateway, so create a new client.
     debug!("Setting up http client for twilight");
 
-    let http = Arc::new(discord::new_client(settings.discord.bot_token));
+    let aoc_client = AocClient::new(&settings.aoc.session_cookie)?;
+    let discord_client = Arc::new(discord::new_client(settings.discord.bot_token));
 
     let board_id = Arc::from(settings.aoc.board_id);
-    let session_cookie = Arc::from(settings.aoc.session_cookie);
 
     // Process each event as they come in.
     while let Some(event) = events_rx.recv().await {
@@ -67,9 +67,9 @@ async fn main() -> Result<()> {
 
         let fut = handle_event(
             event,
-            Arc::clone(&http),
+            aoc_client.clone(),
+            Arc::clone(&discord_client),
             Arc::clone(&board_id),
-            Arc::clone(&session_cookie),
             settings.aoc.event_year,
         );
 
@@ -88,35 +88,38 @@ async fn main() -> Result<()> {
     result = true,
     with_cached_flag = true,
     key = "String",
-    convert = r#"{ format!("{}-{}", session_cookie, leaderboard_id) }"#
+    convert = r#"{ format!("{}-{}", event, leaderboard_id) }"#
 )]
 async fn get_aoc_data(
-    session_cookie: &str,
+    client: AocClient,
+    event: u16,
     leaderboard_id: &str,
-    event: &u16,
 ) -> Result<cached::Return<LeaderboardStats>> {
     Ok(cached::Return::new(
-        aoc::get_private_leaderboard_stats(session_cookie, event, leaderboard_id).await?,
+        client
+            .get_private_leaderboard_stats(event, leaderboard_id)
+            .await?,
     ))
 }
 
 async fn handle_event(
     event: Event,
-    http: Arc<HttpClient>,
+    aoc_client: AocClient,
+    discord_client: Arc<DiscordClient>,
     board_id: Arc<str>,
-    session_cookie: Arc<str>,
     event_year: u16,
 ) -> Result<()> {
     match event {
         Event::Ping(msg) => {
             info!("Ping message");
-            let r = http
+            let r = discord_client
                 .create_message(msg.channel_id.into())
                 .content(":ping_pong: Pong! - Latency [000]ms")?
                 .exec()
                 .await?;
             let resmsg = r.model().await?;
-            http.update_message(msg.channel_id.into(), resmsg.id)
+            discord_client
+                .update_message(msg.channel_id.into(), resmsg.id)
                 .content(Some(
                     format!(
                         ":ping_pong: Pong! - Latency [{:0>3}]ms",
@@ -137,7 +140,7 @@ async fn handle_event(
                 info!("Automated request");
             }
 
-            let data = get_aoc_data(&session_cookie, &board_id, &event_year).await?;
+            let data = get_aoc_data(aoc_client, event_year, &board_id).await?;
 
             debug!(
                 "Retrieved data (cached: {}) -> constructing message",
@@ -168,14 +171,16 @@ async fn handle_event(
                 );
             }
             debug!("sending discord message to {}", msg.channel_id);
-            http.create_message(msg.channel_id.into())
+            discord_client
+                .create_message(msg.channel_id.into())
                 .embeds(&[embed.build()?])?
                 .exec()
                 .await?;
         }
         Event::FourtyTwo(msg) => {
             info!("42 message");
-            http.create_message(msg.channel_id.into())
+            discord_client
+                .create_message(msg.channel_id.into())
                 .content(
                     ":exploding_head: \
                     The Answer to the Ultimate Question of Life, \
@@ -187,11 +192,11 @@ async fn handle_event(
         Event::TopThree(msg) => {
             info!("getting top 3");
 
-            let data = get_aoc_data(&session_cookie, &board_id, &event_year).await?;
+            let data = get_aoc_data(aoc_client, event_year, &board_id).await?;
             let mut uvec = data.members.values().collect::<Vec<_>>();
 
             if uvec.len() < 3 {
-                http.create_message(msg.channel_id.into())
+                discord_client.create_message(msg.channel_id.into())
                     .content(":exclamation: Sorry, but there are not 3 people on your leaderboard, and you do not fill these 3 steps alone")?
                     .exec()
                     .await?;
@@ -236,7 +241,8 @@ async fn handle_event(
                 uvec[2].stars
             );
 
-            http.create_message(msg.channel_id.into())
+            discord_client
+                .create_message(msg.channel_id.into())
                 .content(&text)?
                 .exec()
                 .await?;
