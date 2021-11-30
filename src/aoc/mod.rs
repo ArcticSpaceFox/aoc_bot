@@ -4,7 +4,6 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 use chrono::prelude::*;
-use cookie::Cookie;
 use reqwest::header::{self, HeaderMap};
 use serde::Deserialize;
 
@@ -48,9 +47,7 @@ pub struct Client {
 
 impl Client {
     pub fn new(session_cookie: &str) -> Result<Self> {
-        let cookie = Cookie::build("session", session_cookie)
-            .finish()
-            .to_string();
+        let cookie = format!("session={}", session_cookie);
 
         let mut headers = HeaderMap::with_capacity(1);
         headers.insert(header::COOKIE, cookie.try_into()?);
