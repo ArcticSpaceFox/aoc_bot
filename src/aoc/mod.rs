@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 use chrono::prelude::*;
-use reqwest::header;
+use reqwest::header::{self, HeaderMap};
 use serde::Deserialize;
 
 mod de;
@@ -40,24 +40,44 @@ pub struct Challenge {
     pub get_star_ts: DateTime<Utc>,
 }
 
-/// Get the latest statistics from a private leaderboard. It is asked by the AoC website owners to
-/// not request this data more often than every 15 minutes.
-pub async fn get_private_leaderboard_stats(
-    session_cookie: &str,
-    event: &u16,
-    leaderboard_id: &str,
-) -> Result<LeaderboardStats> {
-    let url = format!(
-        "https://adventofcode.com/{}/leaderboard/private/view/{}.json",
-        event, leaderboard_id
-    );
-    let cookie = format!("session={}", session_cookie);
+#[derive(Clone)]
+pub struct Client {
+    http: reqwest::Client,
+}
 
-    let response = reqwest::Client::new()
-        .get(&url)
-        .header(header::COOKIE, cookie)
-        .send()
-        .await?;
+impl Client {
+    pub fn new(session_cookie: &str) -> Result<Self> {
+        let cookie = format!("session={}", session_cookie);
 
-    Ok(response.json().await?)
+        let mut headers = HeaderMap::with_capacity(1);
+        headers.insert(header::COOKIE, cookie.try_into()?);
+
+        Ok(Self {
+            http: reqwest::Client::builder()
+                .default_headers(headers)
+                .build()?,
+        })
+    }
+
+    /// Get the latest statistics from a private leaderboard. It is asked by the AoC website owners
+    /// to not request this data more often than every 15 minutes.
+    pub async fn get_private_leaderboard_stats(
+        &self,
+        event: u16,
+        leaderboard_id: &str,
+    ) -> Result<LeaderboardStats> {
+        let url = format!(
+            "https://adventofcode.com/{}/leaderboard/private/view/{}.json",
+            event, leaderboard_id
+        );
+
+        self.http
+            .get(url)
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await
+            .map_err(Into::into)
+    }
 }
