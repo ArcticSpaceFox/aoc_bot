@@ -21,13 +21,7 @@ pub struct User {
     pub stars: u32,
     pub local_score: u32,
     pub global_score: u32,
-    pub completion_day_level: CompletionDayLevel,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub struct CompletionDayLevel {
-    #[serde(rename = "1")]
-    pub value: Option<Day>,
+    pub completion_day_level: HashMap<String, Day>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
