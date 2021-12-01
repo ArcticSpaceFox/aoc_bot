@@ -7,8 +7,6 @@ use chrono::prelude::*;
 use reqwest::header::{self, HeaderMap};
 use serde::Deserialize;
 
-mod de;
-
 #[derive(Clone, Debug, Deserialize)]
 pub struct LeaderboardStats {
     pub event: String,
@@ -19,11 +17,17 @@ pub struct LeaderboardStats {
 #[derive(Clone, Debug, Deserialize)]
 pub struct User {
     pub id: String,
-    pub name: String,
+    pub name: Option<String>,
     pub stars: u32,
     pub local_score: u32,
     pub global_score: u32,
-    pub completion_day_level: HashMap<String, Day>,
+    pub completion_day_level: CompletionDayLevel,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct CompletionDayLevel {
+    #[serde(rename = "1")]
+    pub value: Option<Day>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -36,7 +40,7 @@ pub struct Day {
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Challenge {
-    #[serde(deserialize_with = "de::string_timestamp")]
+    #[serde(with = "chrono::serde::ts_seconds")]
     pub get_star_ts: DateTime<Utc>,
 }
 

@@ -159,7 +159,12 @@ async fn handle_event(
             for (idx, user) in uvec.iter().enumerate() {
                 embed = embed.field(
                     EmbedFieldBuilder::new(
-                        format!("#{} - {} - {} score", idx + 1, user.name, user.local_score),
+                        format!(
+                            "#{} - {} - {} score",
+                            idx + 1,
+                            user.name.as_deref().unwrap_or("<anonymous>"),
+                            user.local_score
+                        ),
                         format!(
                             "⭐ Solved {} Challenges\n⏱️ Last at {}",
                             user.stars,
@@ -230,13 +235,13 @@ async fn handle_event(
   |   |  |__                       __|  |   |
   |   |_____|                     |_____|   |
   \\_________________________________________/ ```",
-                uvec[0].name,
+                uvec[0].name.as_deref().unwrap_or("<anonymous>"),
                 uvec[0].local_score,
                 uvec[0].stars,
-                uvec[1].name,
+                uvec[1].name.as_deref().unwrap_or("<anonymous>"),
                 uvec[1].local_score,
                 uvec[1].stars,
-                uvec[2].name,
+                uvec[2].name.as_deref().unwrap_or("<anonymous>"),
                 uvec[2].local_score,
                 uvec[2].stars
             );
@@ -257,17 +262,13 @@ async fn handle_event(
 /// part 1 or 2 was solved latest (as part 2 may not be solved yet) for each day and then compares
 /// this timestamp with the other days.
 fn latest_challenge(user: &User) -> String {
-    let max = user
-        .completion_day_level
-        .values()
-        .map(|day| {
-            if let Some(part2) = &day.part2 {
-                day.part1.get_star_ts.max(part2.get_star_ts)
-            } else {
-                day.part1.get_star_ts
-            }
-        })
-        .max();
+    let max = user.completion_day_level.value.as_ref().map(|day| {
+        if let Some(part2) = &day.part2 {
+            day.part1.get_star_ts.max(part2.get_star_ts)
+        } else {
+            day.part1.get_star_ts
+        }
+    });
 
     match max {
         None => "...never".to_owned(),
