@@ -208,7 +208,7 @@ async fn handle_event(
                 return Ok(());
             }
 
-            uvec.sort_by_key(|m| m.local_score);
+            uvec.sort_by(|a, b| a.local_score.cmp(&b.local_score).reverse());
 
             debug!(
                 "Retrieved data (cached: {}) -> constructing message",
