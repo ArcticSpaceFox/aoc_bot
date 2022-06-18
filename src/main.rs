@@ -13,8 +13,8 @@ use simplelog::{
 };
 use tokio::sync::mpsc::{self, Sender};
 use tokio::time;
-use twilight_embed_builder::{EmbedBuilder, EmbedFieldBuilder};
 use twilight_http::Client as DiscordClient;
+use twilight_util::builder::embed::{EmbedBuilder, EmbedFieldBuilder};
 
 use aoc_bot::{
     aoc::{Client as AocClient, LeaderboardStats, User},
@@ -178,7 +178,7 @@ async fn handle_event(
             debug!("sending discord message to {}", msg.channel_id);
             discord_client
                 .create_message(msg.channel_id.into())
-                .embeds(&[embed.build()?])?
+                .embeds(&[embed.build()])?
                 .exec()
                 .await?;
         }
