@@ -18,7 +18,8 @@ pub async fn start(settings: &Discord, sender: Sender<crate::models::Event>) -> 
                 | EventTypeFlags::MESSAGE_DELETE_BULK
                 | EventTypeFlags::MESSAGE_UPDATE,
         )
-        .build();
+        .build()
+        .await?;
 
     shard.start().await?;
 
@@ -84,7 +85,7 @@ pub fn new_client(token: String) -> HttpClient {
 impl From<Message> for crate::models::Message {
     fn from(m: Message) -> Self {
         Self {
-            channel_id: m.channel_id.0,
+            channel_id: m.channel_id.into(),
             author: Some(m.author.into()),
             timestamp: Some(m.timestamp),
         }
@@ -94,7 +95,7 @@ impl From<Message> for crate::models::Message {
 impl From<User> for crate::models::Author {
     fn from(u: User) -> Self {
         Self {
-            id: u.id.0,
+            id: u.id.into(),
             name: u.name,
         }
     }
