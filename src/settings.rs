@@ -8,8 +8,8 @@ use std::path::PathBuf;
 use anyhow::{anyhow, Context, Result};
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
-use simplelog::LevelFilter;
 use tokio::fs;
+use tracing::Level;
 
 /// Main structure that holds all the settings of this bot.
 #[derive(Deserialize)]
@@ -36,7 +36,7 @@ impl Default for Logging {
     fn default() -> Self {
         Self {
             terminal: Some(BaseLogger {
-                filter: LevelFilter::Info,
+                filter: Level::INFO,
             }),
             file: None,
         }
@@ -47,8 +47,8 @@ impl Default for Logging {
 #[derive(Deserialize)]
 pub struct BaseLogger {
     /// Maximum logging level that the backend outputs.
-    #[serde(with = "SerdeLevelFilter")]
-    pub filter: LevelFilter,
+    #[serde(with = "serde_level")]
+    pub filter: Level,
 }
 
 /// Logging configuration specific to file backends.
@@ -86,18 +86,6 @@ pub struct Discord {
 pub struct Schedule {
     pub interval: String,
     pub channel_id: NonZeroU64,
-}
-
-/// A wrapper for the [LevelFilter] that allows to use it in [serde], as it doesn't provide support
-/// for it out of the box.
-#[derive(Deserialize)]
-#[serde(remote = "LevelFilter", rename_all = "lowercase")]
-enum SerdeLevelFilter {
-    Error,
-    Warn,
-    Info,
-    Debug,
-    Trace,
 }
 
 /// An intermediate structure for the authentication related settings that allows to parse them
@@ -233,4 +221,44 @@ where
 
     toml::from_slice(&content)
         .with_context(|| format!("failed to parse TOML config from '{}'", path))
+}
+
+/// A deserializer for the [LevelFilter] that allows to use it in [serde], as it doesn't provide
+/// support for it out of the box.
+mod serde_level {
+    use std::fmt;
+
+    use serde::de::{Deserializer, Visitor};
+    use tracing::Level;
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Level, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_str(LevelVisitor)
+    }
+
+    struct LevelVisitor;
+
+    impl<'de> Visitor<'de> for LevelVisitor {
+        type Value = Level;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+            formatter.write_str("tracing logging level")
+        }
+
+        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            Ok(match v {
+                "error" => Level::ERROR,
+                "warn" => Level::WARN,
+                "info" => Level::INFO,
+                "debug" => Level::DEBUG,
+                "trace" => Level::TRACE,
+                _ => return Err(E::custom(format!("unknown logging level `{v}`"))),
+            })
+        }
+    }
 }

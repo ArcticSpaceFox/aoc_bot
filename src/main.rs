@@ -7,12 +7,11 @@ use cached::proc_macro::cached;
 use chrono::Local;
 use chrono_humanize::Humanize;
 use cron::Schedule;
-use log::{debug, error, info};
-use simplelog::{
-    ColorChoice, CombinedLogger, ConfigBuilder, SharedLogger, TermLogger, TerminalMode, WriteLogger,
-};
 use tokio::sync::mpsc::{self, Sender};
 use tokio::time;
+use tracing::{debug, error, info};
+use tracing_appender::non_blocking::WorkerGuard;
+use tracing_subscriber::{filter::Targets, layer, prelude::*};
 use twilight_http::Client as DiscordClient;
 use twilight_util::builder::embed::{EmbedBuilder, EmbedFieldBuilder};
 
@@ -30,7 +29,7 @@ async fn main() -> Result<()> {
     // Load settings file
     let settings = Settings::new().await.context("failed loading settings")?;
 
-    setup_logger(&settings.logging).context("failed setting up logger")?;
+    let _guard = setup_logger(&settings.logging).context("failed setting up logger")?;
 
     info!("Starting ...");
     let (events_tx, mut events_rx) = mpsc::channel(1);
@@ -317,26 +316,36 @@ async fn run_scheduler(
 
 /// Set up an combined logger which will log to the terminal and a file. Whether a logger is enabled
 /// or what level it logs at is defined by the given configuration.
-fn setup_logger(config: &Logging) -> Result<()> {
-    let mut loggers = Vec::<Box<dyn SharedLogger>>::new();
-    let log_config = ConfigBuilder::new().add_filter_allow_str("aoc_bot").build();
+fn setup_logger(config: &Logging) -> Result<Option<WorkerGuard>> {
+    let mut guard = None;
 
-    if let Some(terminal) = &config.terminal {
-        loggers.push(TermLogger::new(
-            terminal.filter,
-            log_config.clone(),
-            TerminalMode::Mixed,
-            ColorChoice::Auto,
-        ));
+    let terminal_layer = if let Some(terminal) = &config.terminal {
+        tracing_subscriber::fmt::layer()
+            .with_filter(Targets::new().with_target("aoc_bot", terminal.filter))
+            .boxed()
+    } else {
+        layer::Identity::new().boxed()
     };
 
-    if let Some(file) = &config.file {
-        loggers.push(WriteLogger::new(
-            file.base.filter,
-            log_config,
-            File::create(&file.path)?,
-        ));
-    }
+    let file_layer = if let Some(file) = &config.file {
+        let out = File::create(&file.path)?;
+        let (non_blocking, worker_guard) = tracing_appender::non_blocking(out);
+        guard = Some(worker_guard);
 
-    CombinedLogger::init(loggers).context("logger failed to set up")
+        tracing_subscriber::fmt::layer()
+            .with_ansi(false)
+            .with_writer(non_blocking)
+            .with_filter(Targets::new().with_target("aoc_bot", file.base.filter))
+            .boxed()
+    } else {
+        layer::Identity::new().boxed()
+    };
+
+    tracing_subscriber::registry()
+        .with(terminal_layer)
+        .with(file_layer)
+        .try_init()
+        .context("logger failed to set up")?;
+
+    Ok(guard)
 }

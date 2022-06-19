@@ -1,7 +1,7 @@
 use anyhow::Result;
 use futures_util::stream::StreamExt;
-use log::{debug, error, info};
 use tokio::sync::mpsc::Sender;
+use tracing::{debug, error, info};
 use twilight_cache_inmemory::{InMemoryCache, ResourceType};
 use twilight_gateway::{shard::Events, Event, EventTypeFlags, Shard};
 use twilight_http::Client as HttpClient;
