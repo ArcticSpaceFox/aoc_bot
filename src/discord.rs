@@ -18,8 +18,7 @@ pub async fn start(settings: &Discord, sender: Sender<crate::models::Event>) -> 
                 | EventTypeFlags::MESSAGE_DELETE_BULK
                 | EventTypeFlags::MESSAGE_UPDATE,
         )
-        .build()
-        .await?;
+        .build();
 
     shard.start().await?;
 

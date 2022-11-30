@@ -9,22 +9,22 @@ edition = "2021"
 license = "AGPL-3.0-only"
 
 [dependencies]
-anyhow = "1.0.57"
-cached = "0.34.1"
-chrono = { version = "0.4.19", features = ["serde"] }
-chrono-humanize = "0.2.1"
-cron = "0.11.0"
+anyhow = "1.0.66"
+cached = "0.40.0"
+chrono = { version = "0.4.23", default-features = false, features = ["serde"] }
+chrono-humanize = "0.2.2"
+cron = "0.12.0"
 dotenv = "0.15.0"
-futures-util = "0.3.21"
+futures-util = "0.3.25"
 humantime = "2.1.0"
 log = "0.4.17"
-reqwest = { version = "0.11.11", default-features = false, features = ["json", "rustls-tls-webpki-roots"] }
-serde = { version = "1.0.137", features = ["derive"] }
+reqwest = { version = "0.11.13", default-features = false, features = ["json", "rustls-tls-webpki-roots"] }
+serde = { version = "1.0.148", features = ["derive"] }
 simplelog = "0.12.0"
-tokio = { version = "1.19.2", features = ["fs", "macros", "rt-multi-thread", "signal"] }
+tokio = { version = "1.22.0", features = ["fs", "macros", "rt-multi-thread", "signal"] }
 toml = "0.5.9"
-twilight-cache-inmemory = "0.11.0"
-twilight-gateway = { version = "0.11.0", default-features = false, features = ["rustls-webpki-roots", "zlib-stock"] }
-twilight-http = { version = "0.11.0", default-features = false, features = ["decompression", "rustls-webpki-roots"] }
-twilight-model = "0.11.0"
-twilight-util = { version = "0.11.0", features = ["builder"] }
+twilight-cache-inmemory = "0.14.0"
+twilight-gateway = { version = "0.14.0", default-features = false, features = ["rustls-webpki-roots", "zlib-stock"] }
+twilight-http = { version = "0.14.0", default-features = false, features = ["decompression", "rustls-webpki-roots"] }
+twilight-model = "0.14.0"
+twilight-util = { version = "0.14.0", features = ["builder"] }

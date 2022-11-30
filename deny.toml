@@ -1,17 +1,18 @@
 [advisories]
 ignore = [
     "RUSTSEC-2020-0071",
-    "RUSTSEC-2020-0159"
+    "RUSTSEC-2021-0141",
 ]
 
 [licenses]
 allow = [
     "MPL-2.0",
-    "OpenSSL"
+    "OpenSSL",
 ]
 allow-osi-fsf-free = "both"
 exceptions = [
-    { allow = ["AGPL-3.0"], name = "aoc_bot", version = "*" },
+    { allow = ["AGPL-3.0"], name = "aoc_bot" },
+    { allow = ["Unicode-DFS-2016"], name = "unicode-ident" },
 ]
 
 [[licenses.clarify]]
@@ -19,5 +20,11 @@ name = "ring"
 version = "*"
 expression = "MIT AND ISC AND OpenSSL"
 license-files = [
-    { path = "LICENSE", hash = 0xbd0eed23 }
+    { path = "LICENSE", hash = 0xbd0eed23 },
+]
+
+[bans]
+skip = [
+    { name = "wasi", version = "=0.10.0" },
+    { name = "time", version = "=0.1.45" },
 ]
