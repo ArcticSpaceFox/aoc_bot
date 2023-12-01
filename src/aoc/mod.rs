@@ -10,13 +10,13 @@ use serde::Deserialize;
 #[derive(Clone, Debug, Deserialize)]
 pub struct LeaderboardStats {
     pub event: String,
-    pub owner_id: String,
+    pub owner_id: u32,
     pub members: HashMap<String, User>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct User {
-    pub id: String,
+    pub id: u32,
     pub name: Option<String>,
     pub stars: u32,
     pub local_score: u32,

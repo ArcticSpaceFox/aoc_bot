@@ -10,10 +10,10 @@ license = "AGPL-3.0-only"
 
 [dependencies]
 anyhow = "1.0.57"
-cached = "0.34.1"
+cached = { version = "0.46.1", features = ["async"] }
 chrono = { version = "0.4.19", features = ["serde"] }
 chrono-humanize = "0.2.1"
-cron = "0.11.0"
+cron = "0.12.0"
 dotenv = "0.15.0"
 futures-util = "0.3.21"
 humantime = "2.1.0"
@@ -22,9 +22,9 @@ reqwest = { version = "0.11.11", default-features = false, features = ["json", "
 serde = { version = "1.0.137", features = ["derive"] }
 simplelog = "0.12.0"
 tokio = { version = "1.19.2", features = ["fs", "macros", "rt-multi-thread", "signal"] }
-toml = "0.5.9"
-twilight-cache-inmemory = "0.11.0"
-twilight-gateway = { version = "0.11.0", default-features = false, features = ["rustls-webpki-roots", "zlib-stock"] }
-twilight-http = { version = "0.11.0", default-features = false, features = ["decompression", "rustls-webpki-roots"] }
-twilight-model = "0.11.0"
-twilight-util = { version = "0.11.0", features = ["builder"] }
+toml = "0.8.8"
+twilight-cache-inmemory = "0.15.4"
+twilight-gateway = { version = "0.15.4", default-features = false, features = ["rustls-webpki-roots", "zlib-stock"] }
+twilight-http = { version = "0.15.4", default-features = false, features = ["decompression", "rustls-webpki-roots"] }
+twilight-model = "0.15.4"
+twilight-util = { version = "0.15.4", features = ["builder"] }

@@ -115,7 +115,6 @@ async fn handle_event(
             let r = discord_client
                 .create_message(msg.channel_id.into())
                 .content(":ping_pong: Pong! - Latency [000]ms")?
-                .exec()
                 .await?;
             let resmsg = r.model().await?;
             discord_client
@@ -127,7 +126,6 @@ async fn handle_event(
                     )
                     .as_str(),
                 ))?
-                .exec()
                 .await?;
         }
         Event::AdventOfCode(msg) => {
@@ -179,7 +177,6 @@ async fn handle_event(
             discord_client
                 .create_message(msg.channel_id.into())
                 .embeds(&[embed.build()])?
-                .exec()
                 .await?;
         }
         Event::FourtyTwo(msg) => {
@@ -191,7 +188,6 @@ async fn handle_event(
                     The Answer to the Ultimate Question of Life, \
                     the Universe, and Everything is 42",
                 )?
-                .exec()
                 .await?;
         }
         Event::TopThree(msg) => {
@@ -203,7 +199,6 @@ async fn handle_event(
             if uvec.len() < 3 {
                 discord_client.create_message(msg.channel_id.into())
                     .content(":exclamation: Sorry, but there are not 3 people on your leaderboard, and you do not fill these 3 steps alone")?
-                    .exec()
                     .await?;
                 return Ok(());
             }
@@ -249,7 +244,6 @@ async fn handle_event(
             discord_client
                 .create_message(msg.channel_id.into())
                 .content(&text)?
-                .exec()
                 .await?;
         }
         _ => {}

@@ -1,27 +1,26 @@
 use anyhow::Result;
-use futures_util::stream::StreamExt;
-use log::{debug, error, info};
+use log::{debug, error};
 use tokio::sync::mpsc::Sender;
 use twilight_cache_inmemory::{InMemoryCache, ResourceType};
-use twilight_gateway::{shard::Events, Event, EventTypeFlags, Shard};
+use twilight_gateway::{Config, Event, EventTypeFlags, Shard};
 use twilight_http::Client as HttpClient;
 use twilight_model::{channel::Message, gateway::Intents, user::User};
+use twilight_model::gateway::{CloseFrame, ShardId};
 
 use crate::settings::Discord;
 
 pub async fn start(settings: &Discord, sender: Sender<crate::models::Event>) -> Result<()> {
     // Use intents to only receive guild message events.
-    let (shard, events) = Shard::builder(settings.bot_token.clone(), Intents::GUILD_MESSAGES)
+    let config = Config::builder(settings.bot_token.clone(), Intents::GUILD_MESSAGES | Intents::MESSAGE_CONTENT)
         .event_types(
             EventTypeFlags::MESSAGE_CREATE
                 | EventTypeFlags::MESSAGE_DELETE
                 | EventTypeFlags::MESSAGE_DELETE_BULK
                 | EventTypeFlags::MESSAGE_UPDATE,
         )
-        .build()
-        .await?;
-
-    shard.start().await?;
+        .build();
+    let shard = Shard::with_config(ShardId::ONE, config);
+    let shard_messages = shard.sender();
 
     debug!("Shard set up");
 
@@ -31,7 +30,9 @@ pub async fn start(settings: &Discord, sender: Sender<crate::models::Event>) -> 
         }
 
         debug!("Stopping shard");
-        shard.shutdown();
+        if let Err(e) = shard_messages.close(CloseFrame::NORMAL) {
+            error!("Failed closing shard: {}", e);
+        }
     });
 
     // Since we only care about new messages, make the cache only
@@ -42,17 +43,17 @@ pub async fn start(settings: &Discord, sender: Sender<crate::models::Event>) -> 
         .build();
 
     // Handle Discord events on a separate task.
-    tokio::spawn(handle_events(events, cache, sender));
+    tokio::spawn(handle_events(shard, cache, sender));
 
     Ok(())
 }
 
 async fn handle_events(
-    mut events: Events,
+    mut shard: Shard,
     cache: InMemoryCache,
     sender: Sender<crate::models::Event>,
 ) {
-    while let Some(event) = events.next().await {
+    while let Ok(event) = shard.next_event().await {
         debug!("Received event : {:?}", event);
         cache.update(&event);
 
@@ -67,10 +68,13 @@ async fn handle_events(
                 };
 
                 if sender.send(msg).await.is_err() {
-                    return;
+                    break;
                 }
             }
-            Event::ShardConnected(conn) => info!("Connected on shard {}", conn.shard_id),
+            Event::GatewayClose(_) => {
+                debug!("Shutting down");
+                break;
+            }
             _ => {}
         }
     }
