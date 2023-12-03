@@ -223,7 +223,7 @@ async fn load_toml<T>(path: &str) -> Result<T>
 where
     T: Default + DeserializeOwned,
 {
-    let content = match fs::read(path).await {
+    let content = match fs::read_to_string(path).await {
         Ok(content) => content,
         Err(e) if e.kind() == ErrorKind::NotFound => return Ok(T::default()),
         Err(e) => {
@@ -231,6 +231,7 @@ where
         }
     };
 
-    toml::from_slice(&content)
-        .with_context(|| format!("failed to parse TOML config from '{}'", path))
+    toml::from_str(&content)
+        .map_err(anyhow::Error::from)
+        .context(format!("failed parsing config file at '{}'", path))
 }

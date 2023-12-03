@@ -1,9 +1,9 @@
-FROM rust:1.56 as builder
+FROM rust:1.74 as builder
 
 WORKDIR /volume
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends musl-tools=1.2.2-1 && \
+    apt-get install -y --no-install-recommends musl-tools=1.2.3-1 && \
     rustup target add x86_64-unknown-linux-musl
 
 COPY src/ src/
