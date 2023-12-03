@@ -84,7 +84,7 @@ async fn main() -> Result<()> {
 }
 
 #[cached(
-    time = 7200,
+    time = 900,
     result = true,
     with_cached_flag = true,
     key = "String",
